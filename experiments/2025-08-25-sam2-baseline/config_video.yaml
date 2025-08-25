@@ -1,0 +1,28 @@
+video_path: "C:/Users/absoy/OneDrive/Dev/Alter Vision/Git/adswapai/samples/1.mp4"
+checkpoint: "C:/Users/absoy/OneDrive/Dev/Alter Vision/Git/adswapai/external/sam2/checkpoints/sam2.1_hiera_small.pt"
+model_cfg: "configs/sam2.1/sam2.1_hiera_s.yaml"
+device: "cuda"
+dtype: "bfloat16"
+
+# Video tracking parameters
+tracking:
+  # Player detection parameters
+  min_player_area_ratio: 0.001  # Minimum player area (0.1% of frame)
+  max_player_area_ratio: 0.1    # Maximum player area (10% of frame)
+  
+  # Point prompts for player detection
+  detection_points: "auto"  # "auto" for automatic grid, or list of [x,y] coordinates
+  
+  # Visual settings
+  overlay_alpha: 0.3  # Mask transparency (0-1)
+  track_colors:
+    - [0, 255, 0]     # Green
+    - [255, 0, 0]     # Red
+    - [0, 0, 255]     # Blue
+    - [255, 255, 0]   # Yellow
+    - [255, 0, 255]   # Magenta
+    - [0, 255, 255]   # Cyan
+    - [255, 128, 0]   # Orange
+    - [128, 255, 0]   # Lime
+    - [128, 0, 255]   # Purple
+    - [255, 128, 128] # Light red

@@ -1,0 +1,14 @@
+image_path: "C:/Users/absoy/OneDrive/Dev/Alter Vision/Git/adswapai/samples/sample_frame.jpg"
+checkpoint: "C:/Users/absoy/OneDrive/Dev/Alter Vision/Git/adswapai/external/sam2/checkpoints/sam2.1_hiera_small.pt"
+model_cfg: "configs/sam2.1/sam2.1_hiera_s.yaml"
+device: "cuda"
+dtype: "bfloat16"
+output_dir: "./outputs/result.jpg"
+
+# Prompt configuration - let's try auto segmentation for all objects
+prompt:
+  type: "auto"  # This will detect all objects automatically
+  # type: "point"
+  # point: [960, 540]  # Center of 1920x1080 image
+  # type: "box" 
+  # box: [400, 200, 1500, 800]  # [x1, y1, x2, y2] for larger area
