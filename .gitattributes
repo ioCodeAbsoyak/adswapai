@@ -1,15 +1,17 @@
-* text=auto
-*.py text eol=lf
-*.sh text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-*.md text eol=lf
-*.html text eol=lf
-*.js text eol=lf
-*.css text eol=lf
-*.conf text eol=lf
-dockerfile text eol=lf
-*.jpg binary
-*.png binary
+# Normalise line endings: LF in the repository and in the working tree
+# (the code runs in Linux containers; Windows tools handle LF fine).
+* text=auto eol=lf
+
+# Binary files
+*.jpg  binary
+*.jpeg binary
+*.png  binary
 *.webp binary
+*.gif  binary
+*.ico  binary
 *.docx binary
+*.pdf  binary
+*.mp4  binary
+*.pth  binary
+*.pt   binary
+*.pkl  binary
