@@ -116,5 +116,7 @@ replacement third.
 
 ## License
 
-Private project, no license granted yet. Add a `LICENSE` file before making
-the repository public.
+[MIT](LICENSE). The sample footage, the ad images and the brand assets in
+`docs/images/brand/` are not covered by the license; the third-party models
+and libraries used (Detectron2, torchvision, Ultralytics, SAM2, RAFT,
+SuperGlue) keep their own licenses.
