@@ -1,0 +1,10 @@
+# Runtime dependencies (torch/torchvision and detectron2 are installed separately in the Dockerfile)
+flask>=3.0
+opencv-python-headless>=4.9
+numpy
+pillow
+pyyaml
+fvcore
+iopath
+pycocotools
+yacs

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AdSwap AI Technology - The real engineering behind next-gen AI billboard replacement. Discover the technical details, the hard lessons, and how we built a working system after hundreds of real-world tests.">
+  <meta name="keywords" content="AI sports advertising, computer vision engineering, Mask R-CNN, CUDA GPU, deep learning, tracking, sports technology, broadcast AI">
+  <meta name="author" content="AdSwap AI Technical Team">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://adswap.ai/technology">
+  <meta property="og:title" content="Technology Behind AdSwap AI AI Sports Advertising">
+  <meta property="og:description" content="The hard-earned technical story: GPU-powered detection, advanced tracking, and hundreds of prototypes to achieve seamless billboard replacement.">
+  <meta property="og:image" content="https://adswap.ai/images/og-technology.jpg">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://adswap.ai/technology">
+  <meta property="twitter:title" content="Technology Behind AdSwap AI AI Sports Advertising">
+  <meta property="twitter:description" content="Go inside the engineering: how hundreds of real-world tests and full GPU pipelines power our next-gen sports ad tech.">
+  <meta property="twitter:image" content="https://adswap.ai/images/og-technology.jpg">
+
+  <link rel="icon" href="images/favicon.png" type="image/png">
+  <link rel="canonical" href="https://adswap.ai/technology">
+  <link rel="stylesheet" href="css/shared-styles.css">
+  <link rel="stylesheet" href="css/tech.css">
+  <title>Technology Behind AdSwap AI AI Sports Advertising</title>
+</head>
+<body>
+  <!-- Top Banner -->
+  <div class="top-banner">
+    🔬 Real Engineering, Real Results – Discover the Tech Behind the Demo | <a href="demo.html">Try Live Demo →</a>
+  </div>
+
+  <!-- Header -->
+  <header class="main-header">
+    <nav class="header-nav">
+      <div class="logo-section">
+        <a href="index.html"><img src="images/logo.png" height="40" alt="AdSwap AI - Video Monetization"/></a>       
+      </div>
+      <ul class="nav-menu">
+        <li><a href="demo.html">Try Live Demo →</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="technology.html">How It Works</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">AI Billboard Replacement, Simplified</h1>
+      <p class="hero-subtitle">
+        Instant billboard replacement in any video—powered by advanced computer vision.  
+        <b>No camera tracking. No legacy "virtual ad" tech. Just pure AI.</b>
+      </p>
+
+      <div class="hero-features">
+        <div class="hero-feature">
+          <span class="feature-icon">🎯</span>
+          <span>POC: Live, Working Demo</span>
+        </div>
+        <div class="hero-feature">
+          <span class="feature-icon">⚡</span>
+          <span>11–12 FPS AI Processing - Can be extended to Real-time</span>
+        </div>
+        <div class="hero-feature">
+          <span class="feature-icon">🤝</span>
+          <span>Investment Partners Welcome</span>
+        </div>
+        <div class="hero-feature">
+          <span class="feature-icon">🌍</span>
+          <span>Cloud-scalable, Global-Ready</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Engineering Journey -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">From 400+ Experiments to 1 Working Demo</h2>
+      <div class="development-timeline">
+        <div class="timeline-content">
+          <p style="text-align:center; font-size:1.1rem;">
+            The POC you see now is the <b>result of testing, breaking, and re-building over 400+ code versions and approaches</b>.<br>
+            Every broadcast, every stadium, and every lighting condition brought its own challenge.<br><br>
+            <span>The real secret? Relentless engineering and field validation. There is no magic script – just the best of modern AI, computer vision, and a lot of patience.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- System Architecture -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Technical Foundation & Pipeline</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">🤖</div>
+          <h3>Custom Object Detection</h3>
+          <p>
+            We trained our own deep learning models (Mask R-CNN variants) to detect advertising boards with pixel-level accuracy.
+            <br>
+            <b>Why not use ready models?</b> Because every stadium and league is different. Our network was tailored for real, messy sports video.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <h3>Tracking & Seamless Integration</h3>
+          <p>
+            The “magic” isn’t just detection. We use fast, GPU-based tracking (RAFT & custom logic) to follow each board over time,
+            enabling <b>smooth transitions</b> and perspective correction even with fast camera moves and scene cuts.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🛡️</div>
+          <h3>Safety: Multi-Model Filtering</h3>
+          <p>
+            To prevent errors, we run parallel models for <b>humans, balls, and other moving objects</b> (COCO / pretrained Mask R-CNN).
+            <br>
+            Billboards are only replaced when we’re 100% sure it’s safe — this is not a toy, it’s production-ready AI.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <h3>Everything Runs on GPU</h3>
+          <p>
+            The entire pipeline — from detection to mask blending and video rendering — runs on CUDA and GPU acceleration (PyTorch, TensorRT).
+            <br>
+            <b>No CPU bottlenecks, no off-the-shelf “scripts.”</b>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Not as Easy as it Looks -->
+  <section class="section" style="background:#fffbe6;">
+    <div class="container">
+      <h2 class="section-title">Why This Wasn’t “Just Another Model” Project</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">🔬</div>
+          <h3>Iterative, Not Instant</h3>
+          <p>
+            Each step — from basic detection, to robust tracking, to multi-model masking — was validated on thousands of real frames, not synthetic test sets.
+            <br>
+            <b>Many attempts failed. The result is what survived real-world chaos.</b>
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🛠️</div>
+          <h3>Optimized, Not Off-the-Shelf</h3>
+          <p>
+            Most “sample scripts” or public code crashed or lagged at broadcast scale.
+            <br>
+            <b>Our code is 95% custom, built for real performance and real clients.</b>
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔄</div>
+          <h3>Every Broadcast is Different</h3>
+          <p>
+            The real world is messy. We tuned our pipeline to work across formats, resolutions, and camera angles.<br>
+            <b>That’s why you can try your own video in the demo, not just canned samples.</b>
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🧠</div>
+          <h3>Still Innovating</h3>
+          <p>
+            What you see is just the start. With more data, feedback, and resources, we can make it faster, smarter, and globally scalable.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action / Next Steps -->
+  <section class="section" style="background:#e8f4f8;">
+    <div class="container">
+      <h2 class="section-title">Ready to Build the Future?</h2>
+      <div class="grid">
+        <div class="card" style="text-align: center; grid-column: 1 / -1;">
+          <div class="card-icon" style="margin: 0 auto 2rem;">🚀</div>
+          <h3>From MVP to Industry Standard</h3>
+          <p>
+            We did the hard work to get AI billboard replacement working in the wild.  
+            <br>
+            Now, with the right partners, we can take it to broadcast scale, integrate with leading video platforms, and automate the future of sports advertising.
+          </p>
+          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
+            <a href="mailto:info@adswap.ai" class="cta-button">Partner / Invest</a>
+            <a href="demo.html" class="cta-button btn-success">Try Live Demo →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>AdSwap AI - Next-Gen AI for Sports Advertising</h3>
+          <p>
+            Transforming digital billboard replacement with cloud-powered AI. Try the live demo and experience the future of advertising today.
+          </p>
+        </div>
+        <div class="footer-section">
+          <h3>Resources</h3>
+          <a href="demo.html">Try Live Demo →</a>
+          <a href="about.html">Investment Overview</a>
+          <a href="technology.html">Technology</a>
+        </div>
+        <div class="footer-section">
+          <h3>Contact</h3>
+          <a href="mailto:info@adswap.ai">Contact Us</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025-2026 AdSwap AI. Proof-of-concept built with a minimal, custom dataset. Ready for investment and global scaling. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+  <script>
+    console.log('AdSwap AI Technology Development Page Loaded');
+  </script>
+</body>
+</html>

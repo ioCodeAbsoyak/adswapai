@@ -1,0 +1,85 @@
+<!-- AdSwapAI R&D, 2025-01-24: video-frame click-to-detect frontend. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Tracking with Video</title>
+</head>
+<body>
+    <h1>Object Tracking Demo</h1>
+
+    <!-- Video and Canvas -->
+    <video id="videoPlayer" width="640" height="360" controls crossorigin="anonymous">
+        <source src="http://localhost:5001/videos/Road%20traffic.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <canvas id="canvas" style="border:1px solid black"></canvas>
+
+    <script>
+        const video = document.getElementById('videoPlayer');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Match canvas size to video dimensions
+        video.addEventListener('loadedmetadata', () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        });
+
+        // Draw each video frame on the canvas
+        function drawFrame() {
+            if (!video.paused && !video.ended) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                requestAnimationFrame(drawFrame);
+            }
+        }
+        video.addEventListener('play', drawFrame);
+
+        // Handle click events on the canvas
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.round(e.clientX - rect.left);
+            const y = Math.round(e.clientY - rect.top);
+
+            // Capture the current canvas frame as an image
+            canvas.toBlob((blob) => {
+                const formData = new FormData();
+                formData.append('image', blob, 'snapshot.jpg');
+                formData.append('x', x);
+                formData.append('y', y);
+
+                // Send the frame and coordinates to the backend
+                fetch('http://localhost:5000/select', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.box) {
+                        drawBoundingBox(data.box, data.label);
+                    } else {
+                        alert('No object found at the selected location.');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }, 'image/jpeg');
+        });
+
+        // Draw bounding box and label on the canvas
+        function drawBoundingBox(box, label) {
+            const [x1, y1, x2, y2] = box;
+
+            // Draw bounding box
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+            // Draw label
+            ctx.font = '16px Arial';
+            ctx.fillStyle = 'red';
+            ctx.fillText(label, x1, y1 - 5);
+        }
+    </script>
+</body>
+</html>

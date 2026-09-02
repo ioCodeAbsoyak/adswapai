@@ -1,0 +1,20 @@
+# 20250508/frontend/Dockerfile
+# AdSwapAI R&D, 2025-05-24: frontend Dockerfile (nginx serving the static demo site)
+
+# 1. Use a lightweight Nginx image
+FROM nginx:stable-alpine
+
+# 2. Copy our custom nginx.conf (for the API proxy setting)
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# 3. Place our static files into the site root
+COPY static/ /usr/share/nginx/html/
+
+# 4. Just create the images and videos directory without trying to copy
+RUN mkdir -p /usr/share/nginx/html/images/
+RUN mkdir -p /usr/share/nginx/html/sampleVideos/
+
+# 5. Expose the HTTP port
+EXPOSE 80
+
+# (Entrypoint - Nginx already starts by default)

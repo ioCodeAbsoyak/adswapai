@@ -1,0 +1,51 @@
+# --- model weights & large binaries (kept out of git; see docs/assets.md) ---
+*.pth
+*.pt
+*.pkl
+*.onnx
+*.trt
+*.t7
+*.npy
+*.tar
+*.tfevents.*
+
+# --- videos ---
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+
+# --- runtime output ---
+app/processed_videos/*
+!app/processed_videos/.gitkeep
+app/backend/models/*
+!app/backend/models/.gitkeep
+outputs/
+runs/
+temp_frames/
+*.log
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+*.egg-info/
+
+# --- editors / os ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- experiment inputs/outputs (put clips and ad images here, see docs/assets.md) ---
+experiments/**/data/
+experiments/**/output/
+experiments/**/SuperGluePretrainedNetwork/
+experiments/**/sam2/
+training/dataset_v3/images/
+training/detectron2/dataset/images/
+training/detectron2/output*/

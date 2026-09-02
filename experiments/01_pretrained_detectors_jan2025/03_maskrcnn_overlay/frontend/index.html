@@ -1,0 +1,147 @@
+<!-- AdSwapAI R&D, 2025-01-19: Mask R-CNN overlay frontend (colour/opacity mask compositing). -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Selection</title>
+</head>
+<body>
+    <h1>Object Selection Demo</h1>
+
+    <!-- Image upload area -->
+    <label for="upload">Upload an image:</label>
+    <input type="file" id="upload" accept="image/*">
+    <br><br>
+
+    <!-- Colour picker and transparency setting -->
+    <label for="colorPicker">Overlay Color:</label>
+    <input type="color" id="colorPicker" value="#ff0000">
+    <label for="transparency">Transparency:</label>
+    <input type="range" id="transparency" min="0" max="100" value="50">
+    <span id="transparencyValue">50%</span>
+    <br><br>
+
+    <!-- Canvas for the image -->
+    <canvas id="canvas" style="border:1px solid black"></canvas>
+
+    <!-- JavaScript -->
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const uploadInput = document.getElementById('upload');
+        const colorPicker = document.getElementById('colorPicker');
+        const transparencySlider = document.getElementById('transparency');
+        const transparencyValue = document.getElementById('transparencyValue');
+
+        let img = new Image();
+        let overlayColor = '#ff0000';
+        let overlayTransparency = 50;
+
+        // Update colour and transparency
+        colorPicker.addEventListener('input', (e) => {
+            overlayColor = e.target.value;
+        });
+
+        transparencySlider.addEventListener('input', (e) => {
+            overlayTransparency = e.target.value;
+            transparencyValue.textContent = `${overlayTransparency}%`;
+        });
+
+        // When the image is loaded
+        uploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                alert("Please select an image file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                img.src = e.target.result; // Load the image into the canvas
+                img.onload = () => {
+                    canvas.width = img.width; // Resize the canvas to match the image
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    // Send the image to the backend
+                    const formData = new FormData();
+                    formData.append('image', file);
+
+                    fetch('http://localhost:5000/upload', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log('Image uploaded successfully:', data))
+                    .catch(error => console.error('Error uploading image:', error));
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Listen for click events on the canvas
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Send the click coordinates to the backend
+            fetch('http://localhost:5000/select', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ x, y }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Backend Response:", data);
+                if (data.mask) {
+                    // Render the mask
+                    const maskData = Uint8Array.from(atob(data.mask), c => c.charCodeAt(0));
+                    drawMask(maskData);
+                } else {
+                    console.error("No mask data in response");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Draw the mask
+        function drawMask(maskData) {
+            // Create a new canvas for the mask
+            const maskCanvas = document.createElement('canvas');
+            maskCanvas.width = canvas.width;
+            maskCanvas.height = canvas.height;
+            const maskCtx = maskCanvas.getContext('2d');
+
+            // Create a new ImageData object
+            const imageData = maskCtx.createImageData(maskCanvas.width, maskCanvas.height);
+            for (let i = 0; i < maskData.length; i++) {
+                const value = maskData[i] ? 255 : 0; // Binary mask
+                const [r, g, b] = hexToRgb(overlayColor);
+                imageData.data[i * 4] = value ? r : 0;       // R
+                imageData.data[i * 4 + 1] = value ? g : 0;   // G
+                imageData.data[i * 4 + 2] = value ? b : 0;   // B
+                imageData.data[i * 4 + 3] = value ? (overlayTransparency * 2.55) : 0; // Alpha
+            }
+            maskCtx.putImageData(imageData, 0, 0);
+
+            // Blend the mask with the original image
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
+            ctx.drawImage(img, 0, 0); // Draw the original image
+
+            // Apply the mask
+            ctx.drawImage(maskCanvas, 0, 0);
+        }
+
+        // Helper function to convert a hex colour code to RGB
+        function hexToRgb(hex) {
+            const bigint = parseInt(hex.slice(1), 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return [r, g, b];
+        }
+    </script>
+</body>
+</html>

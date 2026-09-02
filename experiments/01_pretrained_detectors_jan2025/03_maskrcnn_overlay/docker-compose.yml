@@ -1,0 +1,15 @@
+# AdSwapAI R&D, 2025-01-19: Mask R-CNN overlay stack (Flask backend + nginx frontend).
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"

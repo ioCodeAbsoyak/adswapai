@@ -1,0 +1,151 @@
+    /* Page-specific styles */
+    .development-timeline {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 3rem;
+      border-radius: 16px;
+      margin: 2rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .timeline-content {
+      position: relative;
+      z-index: 2;
+    }
+    
+    .timeline-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .timeline-step {
+      background: rgba(255,255,255,0.1);
+      padding: 1.5rem;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      border-left: 4px solid rgba(255,255,255,0.3);
+    }
+    
+    .step-number {
+      background: rgba(255,255,255,0.2);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+    
+    .performance-showcase {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      margin: 2rem 0;
+    }
+    
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    
+    .metric-card {
+      text-align: center;
+      padding: 1.5rem;
+      background: #f8fafc;
+      border-radius: 12px;
+      border-top: 4px solid var(--primary-color);
+    }
+    
+    .metric-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+      color: #64748b;
+      font-weight: 500;
+    }
+    
+    .focus-highlight {
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+      color: white;
+      padding: 2rem;
+      border-radius: 16px;
+      text-align: center;
+      margin: 2rem 0;
+    }
+    
+    .challenge-section {
+      background: #f8fafc;
+      padding: 2rem;
+      border-radius: 12px;
+      border-left: 4px solid #f39c12;
+      margin: 2rem 0;
+    }
+    
+    .approach-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .approach-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      border-top: 4px solid var(--primary-color);
+    }
+    
+    .approach-card h4 {
+      color: var(--secondary-color);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .next-steps {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 3rem;
+      border-radius: 16px;
+      margin: 3rem 0;
+      text-align: center;
+    }
+    
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .next-step {
+      background: rgba(255,255,255,0.1);
+      padding: 1.5rem;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .investment-cta {
+      background: var(--secondary-color);
+      color: white;
+      padding: 3rem;
+      border-radius: 16px;
+      text-align: center;
+      margin: 3rem 0;
+    }

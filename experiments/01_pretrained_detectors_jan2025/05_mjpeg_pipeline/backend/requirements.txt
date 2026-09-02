@@ -1,0 +1,13 @@
+-f https://download.pytorch.org/whl/torch_stable.html
+torch==2.1.0+cu121
+torchvision==0.16.0+cu121
+torchaudio==2.1.0+cu121
+flask==2.2.5
+flask-cors==3.0.10
+Pillow
+opencv-python-headless
+numpy<2.0
+filterpy
+matplotlib
+scikit-image
+scipy

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AdSwap AI - The next generation of AI-powered billboard replacement. Try our live POC demo—no camera tracking, no expensive setup, just pure AI.">
+  <meta name="keywords" content="AI billboard replacement, video processing, computer vision, Mask R-CNN, real-time advertising, digital content, video editing, artificial intelligence">
+  <meta name="author" content="AdSwap AI">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://adswap.ai">
+  <meta property="og:title" content="AdSwap AI - AI-Powered Billboard Replacement Technology">
+  <meta property="og:description" content="Try our live POC for AI-powered, camera-tracking-free billboard replacement. Upload your video or use our samples.">
+  <meta property="og:image" content="https://adswap.ai/images/og-main.jpg">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://adswap.ai">
+  <meta property="twitter:title" content="AdSwap AI - AI-Powered Billboard Replacement Technology">
+  <meta property="twitter:description" content="Live demo: AI replaces billboards in any video—no expensive setup required.">
+  <meta property="twitter:image" content="https://adswap.ai/images/og-main.jpg">
+
+  <!-- Schema.org markup for rich snippets -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AdSwap AI Billboard Replacement Tool",
+    "description": "AI-powered video processing tool for billboard replacement using advanced computer vision",
+    "url": "https://adswap.ai",
+    "applicationCategory": "VideoEditingApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Free demo available"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "AdSwap AI"
+    }
+  }
+  </script>
+
+  <link rel="icon" href="images/favicon.png" type="image/png">
+  <link rel="canonical" href="https://adswap.ai">
+  <link rel="preload" href="images/logo.png" as="image">
+  <link rel="stylesheet" href="css/shared-styles.css">
+  <title>AdSwap AI - AI Billboard Replacement | Next-Gen Video Advertising</title>
+</head>
+<body>
+  <!-- Top Banner -->
+  <div class="top-banner">
+    🚀 Experience the next generation of AI advertising - No camera tracking required! | <a href="about.html">Learn More</a>
+  </div>
+
+  <!-- Header -->
+  <header class="main-header">
+    <nav class="header-nav">
+      <div class="logo-section">
+        <a href="index.html"><img src="images/logo.png" height="40" alt="AdSwap AI - Video Monetization"/></a>       
+      </div>
+      <ul class="nav-menu">
+        <li><a href="demo.html">Try Demo</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="technology.html">How It Works</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- How It Works -->
+  <section class="section" style="background: #e8f4f8; padding-top:2rem;">
+    <div class="container">
+      <h2 class="section-title">How to Use the Live Demo</h2>
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-icon">🎬</div>
+          <h3>Step 1: Pick a Video</h3>
+          <p>Choose a sample video or upload your own sports footage (under 50MB).</p>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">🖼️</div>
+          <h3>Step 2: Select Your Ad</h3>
+          <p>Choose from ready-made images or switch to color mask mode for creative overlays.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">⚙️</div>
+          <h3>Step 3: Customize Settings</h3>
+          <p>Adjust AI detection thresholds, mask appearance, and protection options to your preference.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">🚀</div>
+          <h3>Step 4: Run the Demo</h3>
+          <p>Click <b>Process Video with AI</b> and watch billboard replacement happen—instantly!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Form -->
+  <section class="section" id="demo">
+    <div class="container text-center">
+      <h1>Interactive Demo <span class="tech-badge">Live AI Processing</span></h1>
+      <p>
+        This is a fully functional Proof-of-Concept. See for yourself—our AI replaces billboards in real sports videos, with no manual camera tracking or expensive broadcast tech.
+      </p>
+      <div class="processing-info" style="max-width: 800px; margin: 0 auto;">
+        <b>Tech Stack:</b> Proprietary Mask R-CNN models · Cloud-ready CUDA acceleration · Built & trained in-house · Investment partners welcome
+      </div>
+    </div>
+  </section>
+
+  <form id="procForm">
+    <div class="grid-2">    
+      <div class="left-column">      
+        <!-- Processing form -->
+        <div class="panel">
+          <h2>Billboard Replacement Mode</h2>
+          <div class="radio-group">
+            <label><input type="radio" name="mode" value="mask"> Color Mask Overlay</label>
+            <label><input type="radio" name="mode" value="image" checked> Smart Image Replacement</label>
+          </div>
+          <div id="maskControls">
+            <h3>Mask Appearance</h3>
+            <div class="form-group">
+              <label>Color: <input type="color" id="maskColor" value="#00FF00"></label>
+            </div>
+            <div class="form-group">
+              <label>Opacity: <span id="alphaValue" class="value-display">0.5</span></label>
+              <input type="range" id="maskAlpha" min="0.1" max="1.0" step="0.1" value="0.5">
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Input Video Source</h2>
+          <div class="radio-group">
+            <label><input type="radio" name="videoSource" value="sample" checked> Use Sample Videos</label>
+            <label><input type="radio" name="videoSource" value="upload"> Upload Custom Video</label>
+          </div>
+          <div id="sampleVideoContainer">
+            <p><strong>Select a sample video:</strong> Pre-optimized content for demonstration</p>
+            <div class="gallery" id="videoGallery">
+              <!-- Video thumbnails will be populated by JavaScript -->
+            </div>
+          </div>
+          <div id="uploadVideoContainer" class="hide">
+            <p class="note" style="margin-bottom: 15px; color: #e74c3c; font-size: 0.9rem; background: #ffeaa7; padding: 10px; border-radius: 5px;">
+              <strong>Limit:</strong> Video must be under 50MB (MP4, MOV, AVI)
+            </p>
+            <div class="form-group">
+              <label for="video">Upload Video File:</label>
+              <input type="file" id="video" accept="video/mp4,video/quicktime,video/x-msvideo">
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>AI Recognition Settings</h2>
+          <h3>Billboard Detection</h3>
+          <div class="form-group">
+            <label>Confidence Threshold: <span id="threshValue" class="value-display">0.5</span></label>
+            <input type="range" id="confThreshold" min="0.1" max="0.9" step="0.1" value="0.5">
+            <small style="color: #666; display: block; margin-top: 5px;">Higher values = more selective</small>
+          </div>
+          <div class="form-group">
+            <label>Min Billboard Size (%): <span id="sizeValue" class="value-display">0</span></label>
+            <input type="range" id="minMaskSize" min="0" max="0.5" step="0.01" value="0">
+            <small style="color: #666; display: block; margin-top: 5px;">Filter out small detections</small>
+          </div>
+          <h3>Human Detection Filter</h3>
+          <div class="form-group">
+            <label>Human Detection Threshold: <span id="humanThreshValue" class="value-display">0.2</span></label>
+            <input type="range" id="humanConfThreshold" min="0.1" max="0.9" step="0.1" value="0.2">
+            <small style="color: #666; display: block; margin-top: 5px;">Protects human subjects from replacement</small>
+          </div>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="enableHumanFilter" checked>
+              Enable Human Area Protection
+            </label>
+            <small style="color: #666; display: block; margin-top: 5px;">Prevents billboard replacement in human areas</small>
+          </div>
+          <h3>Temporal Smoothing</h3>
+          <div class="form-group">
+            <label>Hold Frames: <span id="holdValue" class="value-display">3</span></label>
+            <input type="range" id="holdFrames" min="0" max="10" step="1" value="3">
+            <small style="color: #666; display: block; margin-top: 5px;">Keeps a board for N frames when detection drops out (reduces flicker, 0 = off)</small>
+          </div>
+        </div> 
+      </div>            
+      <div class="right-column">
+        <div class="panel" id="imageSelectPanel">
+          <h2>Advertisement Selection</h2>
+          <p><strong>Choose billboard content:</strong> Click a thumbnail below or use color mask mode.</p>
+          <div class="gallery" id="thumbnailGallery"></div>
+          <div class="image-preview" id="previewContainer">
+            <img id="previewImage" src="" alt="Selected Advertisement Preview">
+          </div>
+        </div>
+        <button type="submit" class="btn-gradient">🚀 Process Video with AI</button> 
+        <div class="panel" id="resultPanel">
+          <h2>Processing Results</h2>
+          <div id="progress">Ready to process video with AI technology</div>
+          <video id="resultVid" controls style="display:none; width:100%;"></video>
+          <a id="resultDownload" class="hide" href="#" style="display:inline-block; margin-top:10px;">Download processed video</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Virtual Ad vs AI Comparison -->
+  <section class="section" style="background: #fffbe6;">
+    <div class="container">
+      <h2 class="section-title">Not Just Another "Virtual Ad" System</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center;">
+        <div>
+          <ul style="font-size:1.1rem;line-height:2;">
+            <li>🚫 <b>No camera tracking required</b></li>
+            <li>💡 <b>Works with any sports video—even highlights</b></li>
+            <li>☁️ <b>Cloud scalable, affordable, simple</b></li>
+            <li>⚡ <b>AI-only: No legacy hardware, no broadcast lock-in</b></li>
+          </ul>
+        </div>
+        <div>
+          <table style="width:100%;border-collapse:collapse;font-size:1rem;">
+            <thead>
+              <tr style="background:#f4b400;color:white;">
+                <th style="padding:8px;">Classic Virtual Ad</th>
+                <th style="padding:8px;">AdSwap AI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:8px;">Camera tracking mandatory</td>
+                <td style="padding:8px;">AI only, no tracking needed</td>
+              </tr>
+              <tr style="background:#f7f7f7;">
+                <td style="padding:8px;">Expensive on-site setup</td>
+                <td style="padding:8px;">Runs in the cloud, no install</td>
+              </tr>
+              <tr>
+                <td style="padding:8px;">Live broadcast only</td>
+                <td style="padding:8px;">Any video—even highlights</td>
+              </tr>
+              <tr style="background:#f7f7f7;">
+                <td style="padding:8px;">Difficult to scale</td>
+                <td style="padding:8px;">Cloud-native, easy to scale</td>
+              </tr>
+              <tr>
+                <td style="padding:8px;">High total cost</td>
+                <td style="padding:8px;">Affordable & flexible</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Roadmap Section -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Product Roadmap</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="card-icon">🖥️</div>
+          <h3>Offline Video Editor<br><span style="font-weight:400;font-size:1rem;">Planned: <b>within 1 year</b></span></h3>
+          <p>Standalone editor to process pre-recorded sports content—no technical expertise required.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔴</div>
+          <h3>Live Mode<br><span style="font-weight:400;font-size:1rem;">Planned: <b>before year 2</b></span></h3>
+          <p>Real-time AI-powered billboard replacement for live sports broadcasts, scalable for global events.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔗</div>
+          <h3>API & Plugin Integration<br><span style="font-weight:400;font-size:1rem;">Planned: <b>within 1 year</b></span></h3>
+          <p>Plug-and-play APIs for popular video editors—enable instant AI billboard replacement in existing workflows.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Founder/POC Statement -->
+  <section class="founder-note" style="max-width:700px; margin:2rem auto; background:#fffbe6; padding:2rem; border-radius:12px; border-left:6px solid #f4b400;">
+    <h2 style="margin-top:0;">Proof-of-Concept Statement</h2>
+    <p>
+      <strong>
+        This live demo proves our technology works in real-world conditions. No vaporware, no empty promises—just results.
+      </strong>
+      <br><br>
+      Our pipeline, AI models, and cloud infrastructure are ready to scale. 
+      <span style="color:#228B22;">
+        With further investment and industry partnerships, performance and market reach will accelerate exponentially.
+      </span>
+      <br><br>
+      Want to learn more, see detailed results, or explore a partnership? <b><a href="mailto:investment@adswap.ai">Contact us</a></b> to shape the future of digital sports advertising together.
+    </p>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>AdSwap AI - Next-Gen AI for Sports Advertising</h3>
+          <p>
+            Transforming digital billboard replacement with cloud-powered AI. Try the live demo and experience the future of advertising today.
+          </p>
+        </div>
+        <div class="footer-section">
+          <h3>Resources</h3>
+          <a href="demo.html">Try Demo</a>
+          <a href="about.html">Investment Overview</a>
+          <a href="technology.html">Technology</a>
+        </div>
+        <div class="footer-section">
+          <h3>Contact</h3>
+          <a href="mailto:info@adswap.ai">Contact Us</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025-2026 AdSwap AI. Proof-of-concept built with a minimal, custom dataset. Ready for investment and global scaling. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+  <script src="demo.js"></script>
+</body>
+</html>

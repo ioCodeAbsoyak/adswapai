@@ -1,0 +1,79 @@
+# syntax=docker/dockerfile:1
+############################################################################
+# Stage 1: build the Detectron2 wheel (needs the CUDA devel image + compilers)
+############################################################################
+FROM nvidia/cuda:12.8.1-devel-ubuntu22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    MAX_JOBS=8
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      git python3-pip python3-dev build-essential ninja-build && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip3 install --upgrade pip
+
+# PyTorch with CUDA 12.8 (Blackwell / RTX 50xx support)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install torch==2.7.0 torchvision==0.22.0 --index-url https://download.pytorch.org/whl/cu128
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install setuptools wheel ninja yacs pycocotools
+
+# Detectron2 from source. The standard Mask R-CNN inference path only uses
+# torchvision ops, so a GPU is not required at build time.
+ARG DETECTRON2_REF=main
+RUN git clone https://github.com/facebookresearch/detectron2.git /detectron2 && \
+    cd /detectron2 && git checkout ${DETECTRON2_REF} && \
+    pip3 wheel . -w /wheels --no-deps --no-build-isolation
+
+############################################################################
+# Stage 2: runtime image
+############################################################################
+FROM nvidia/cuda:12.8.1-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONUNBUFFERED=1 \
+    FVCORE_CACHE=/workspace/.cache/fvcore \
+    PROCESSED_DIR=/workspace/processed_videos \
+    SAMPLE_VIDEO_DIR=/workspace/sample_videos
+
+WORKDIR /workspace
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      python3-pip python3-dev curl ca-certificates git \
+      libglib2.0-0 libsm6 libxext6 libxrender1 libgl1 \
+      ffmpeg && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip3 install --upgrade pip
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install torch==2.7.0 torchvision==0.22.0 --index-url https://download.pytorch.org/whl/cu128
+
+COPY requirements.txt /workspace/requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install -r /workspace/requirements.txt
+
+# Detectron2 wheel (its declared dependencies are resolved by pip here)
+COPY --from=builder /wheels /wheels
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install /wheels/detectron2-*.whl && rm -rf /wheels
+
+# Bake the COCO Mask R-CNN weights so the container never needs internet at start
+RUN mkdir -p /workspace/models && \
+    curl -fL --retry 3 -o /workspace/models/mask_rcnn_R_50_FPN_3x.pkl \
+      https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl
+
+# Application code + custom billboard weights (last: changes here rebuild fast)
+COPY . /workspace
+
+RUN mkdir -p /workspace/processed_videos /workspace/sample_videos
+
+EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=5 \
+  CMD curl -fs http://localhost:5000/health || exit 1
+
+CMD ["python3", "app.py"]

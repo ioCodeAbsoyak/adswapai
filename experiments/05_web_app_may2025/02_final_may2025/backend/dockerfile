@@ -1,0 +1,103 @@
+# syntax = docker/dockerfile:experimental
+# AdSwapAI R&D, 2025-05-24: backend Dockerfile (Detectron2 wheel build + CUDA runtime image)
+
+############################################
+# 1) Builder: compile Detectron2 into a .whl
+############################################
+FROM nvidia/cuda:12.8.1-devel-ubuntu22.04 AS builder
+
+ENV MAKEFLAGS="-j$(nproc)" \
+    DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=0 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system build tools in single layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      git python3-pip python3-dev build-essential cmake ninja-build && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip3 install --upgrade pip
+
+# Cache PyTorch installation separately (large download)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install \
+      torch==2.7.0+cu128 \
+      torchvision==0.22.0+cu128 \
+      torchaudio==2.7.0+cu128 \
+      --index-url https://download.pytorch.org/whl/cu128
+
+# Cache Detectron2 dependencies separately  
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install ninja yacs pycocotools
+
+# Clone and build Detectron2 wheel (add a Git cache mount)
+RUN --mount=type=cache,target=/root/.cache/git \
+    --mount=type=cache,target=/root/.cache/pip \
+    git clone https://github.com/facebookresearch/detectron2.git /detectron2 && \
+    cd /detectron2 && \
+    python3 -m pip wheel . -w /detectron2/wheels --no-deps
+
+############################################
+# 2) Runtime: install runtime deps + wheel  
+############################################
+FROM nvidia/cuda:12.8.1-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=0 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONPATH="/deep_sort_pytorch" \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /workspace
+
+# Optimize apt installation - minimize layers
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      python3-pip python3-dev curl ca-certificates git \
+      libglib2.0-0 libsm6 libxext6 libxrender1 \
+      ffmpeg libx264-dev libavcodec-extra \
+      libcurl4-openssl-dev libssl-dev \
+      libnvinfer8 libnvonnxparsers8 libnvparsers8 \
+      libnvinfer-plugin8 libnvinfer-bin libcudnn8 && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    pip3 install --upgrade pip
+
+# PyTorch installation (same cache mount)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install \
+      torch==2.7.0+cu128 \
+      torchvision==0.22.0+cu128 \
+      torchaudio==2.7.0+cu128 \
+      --index-url https://download.pytorch.org/whl/cu128
+
+# Other Python packages (optimized ordering)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install \
+      # Core ML libs
+      scipy numpy \
+      opencv-contrib-python \
+      Pillow imageio matplotlib \
+      # Framework libs  
+      flask pyyaml \
+      fvcore iopath shapely \
+      # ML libs
+      scikit-learn einops \
+      # Optional (only if needed)
+      tensorrt easydict
+
+# DeepSORT setup (parallel download)
+RUN mkdir -p /deep_sort_pytorch/deep_sort/deep/checkpoint && \
+    git clone --depth=1 https://github.com/ZQPei/deep_sort_pytorch.git /deep_sort_pytorch & \
+    curl -L https://github.com/ZQPei/deep_sort_pytorch/releases/download/v1.3/ckpt.t7 \
+         -o /deep_sort_pytorch/deep_sort/deep/checkpoint/ckpt.t7 & \
+    wait
+
+# Detectron2 wheel installation
+COPY --from=builder /detectron2/wheels /wheels
+RUN pip3 install /wheels/detectron2*.whl && rm -rf /wheels
+
+# Your code (last - only rebuilds when the code changes)
+COPY . /workspace
+
+EXPOSE 5000
+ENTRYPOINT ["python3", "app.py"]

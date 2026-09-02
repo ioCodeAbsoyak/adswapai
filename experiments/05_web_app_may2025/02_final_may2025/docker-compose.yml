@@ -1,0 +1,30 @@
+# AdSwapAI R&D, 2025-05-24: docker-compose for the final May 2025 backend + frontend
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    image: altervision-backend:latest
+    gpus: all
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./processed_videos:/workspace/processed_videos
+    networks:
+      - appnet
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+    image: altervision-frontend:latest
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge

@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['billboard']
+
+roboflow:
+  workspace: altervision
+  project: altervision
+  version: 1
+  license: Private
+  url: https://app.roboflow.com/altervision/altervision/1

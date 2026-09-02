@@ -1,0 +1,7 @@
+**/__pycache__
+**/*.pyc
+.git
+*.log
+processed_videos
+sample_videos
+.vscode

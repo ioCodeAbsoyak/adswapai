@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AdSwap AI Admin Dashboard - Monitor processing jobs and system status">
+  <title>AdSwap AI - Admin Dashboard</title>
+  <link rel="icon" href="images/favicon.png" type="image/png">
+  <link rel="stylesheet" href="shared-styles.css">
+  
+  <style>
+    /* Admin-specific overrides and additions */
+    body {
+      background: #f8fafc;
+      padding: 20px;
+    }
+    
+    .admin-header {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    
+    .admin-header h1 {
+      color: var(--secondary-color);
+      margin-bottom: 0.5rem;
+    }
+    
+    .admin-header p {
+      color: #64748b;
+      font-size: 1.1rem;
+    }
+    
+    .admin-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .admin-panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--light-color);
+    }
+    
+    .panel-header h2 {
+      margin: 0;
+      color: var(--secondary-color);
+      font-size: 1.8rem;
+    }
+    
+    .refresh-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .refresh-controls label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--dark-color);
+      font-weight: 500;
+    }
+    
+    .refresh-controls select {
+      padding: 0.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--border-radius);
+      font-size: 0.9rem;
+    }
+    
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+    
+    .admin-table th {
+      background: #f8fafc;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--secondary-color);
+      border-bottom: 2px solid var(--light-color);
+    }
+    
+    .admin-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    
+    .admin-table tr:hover {
+      background: #f8fafc;
+    }
+    
+    .job-id-link {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+    }
+    
+    .job-id-link:hover {
+      text-decoration: underline;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .status-active {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    
+    .status-completed {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    
+    .status-error {
+      background: #fecaca;
+      color: #dc2626;
+    }
+    
+    .progress-container {
+      background: #e2e8f0;
+      border-radius: 8px;
+      height: 20px;
+      overflow: hidden;
+      margin-bottom: 0.25rem;
+    }
+    
+    .progress-bar {
+      background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+    
+    .last-updated {
+      text-align: right;
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+    }
+    
+    /* Job Detail Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      max-width: 90vw;
+      max-height: 90vh;
+      width: 800px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .modal-header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+    }
+    
+    .modal-header h3 {
+      margin: 0;
+      color: var(--secondary-color);
+      font-size: 1.5rem;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #64748b;
+      padding: 0.5rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    
+    .modal-close:hover {
+      background: #e2e8f0;
+      color: var(--dark-color);
+    }
+    
+    .modal-body {
+      padding: 2rem;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    
+    .job-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .detail-item {
+      background: #f8fafc;
+      padding: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .detail-label {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    .detail-value {
+      font-size: 1rem;
+      color: var(--dark-color);
+      font-weight: 500;
+      word-break: break-all;
+    }
+    
+    .video-player-container {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .video-player-container h4 {
+      margin-bottom: 1rem;
+      color: var(--secondary-color);
+    }
+    
+    .video-player-container video {
+      width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+      background: #000;
+    }
+    
+    .video-controls {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .json-details {
+      margin-top: 2rem;
+    }
+    
+    .json-details h4 {
+      margin-bottom: 1rem;
+      color: var(--secondary-color);
+    }
+    
+    .json-content {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1.5rem;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    
+    .no-jobs {
+      text-align: center;
+      padding: 3rem;
+      color: #64748b;
+    }
+    
+    .no-jobs img {
+      width: 64px;
+      height: 64px;
+      opacity: 0.5;
+      margin-bottom: 1rem;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #64748b;
+    }
+    
+    .error-message {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="admin-header">
+    <a href="index.html">
+      <img src="images/logo.png" height="80" alt="AdSwap AI" style="margin-bottom: 1rem;" />
+    </a>
+    <h1>Admin Dashboard <span class="tech-badge">Backend Monitoring</span></h1>
+    <p>Monitor processing jobs and system performance</p>
+  </div>
+  
+  <div class="admin-container">
+    <!-- Processing Jobs Panel -->
+    <div class="admin-panel">
+      <div class="panel-header">
+        <h2>🔄 Processing Jobs</h2>
+        <div class="refresh-controls">
+          <label>
+            <input type="checkbox" id="autoRefresh" checked>
+            Auto-refresh
+          </label>
+          <select id="refreshInterval">
+            <option value="1">1 second</option>
+            <option value="5" selected>5 seconds</option>
+            <option value="10">10 seconds</option>
+            <option value="30">30 seconds</option>
+            <option value="60">1 minute</option>
+          </select>
+          <button id="manualRefresh" class="btn">Refresh Now</button>
+        </div>
+      </div>
+      
+      <div id="jobsContainer">
+        <div class="loading">Loading jobs...</div>
+      </div>
+      
+      <div class="last-updated">
+        <strong>Last updated:</strong> <span id="lastUpdated">Never</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job Detail Modal -->
+  <div id="jobDetailModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Job Details</h3>
+        <button class="modal-close" onclick="closeJobDetailModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- Content will be populated by JavaScript -->
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Configuration
+    let refreshInterval = 5000; // 5 seconds default
+    let refreshTimer;
+    let isAutoRefresh = true;
+    
+    // DOM Elements
+    const autoRefreshCheckbox = document.getElementById('autoRefresh');
+    const refreshIntervalSelect = document.getElementById('refreshInterval');
+    const manualRefreshBtn = document.getElementById('manualRefresh');
+    const lastUpdatedSpan = document.getElementById('lastUpdated');
+    const jobsContainer = document.getElementById('jobsContainer');
+    const jobDetailModal = document.getElementById('jobDetailModal');
+    const modalBody = document.getElementById('modalBody');
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchJobs();
+      startAutoRefresh();
+    });
+    
+    // Event Listeners
+    autoRefreshCheckbox.addEventListener('change', function() {
+      isAutoRefresh = this.checked;
+      if (isAutoRefresh) {
+        startAutoRefresh();
+      } else {
+        stopAutoRefresh();
+      }
+    });
+    
+    refreshIntervalSelect.addEventListener('change', function() {
+      refreshInterval = parseInt(this.value) * 1000;
+      if (isAutoRefresh) {
+        stopAutoRefresh();
+        startAutoRefresh();
+      }
+    });
+    
+    manualRefreshBtn.addEventListener('click', () => {
+      fetchJobs();
+    });
+    
+    // Modal click outside to close
+    jobDetailModal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeJobDetailModal();
+      }
+    });
+    
+    // Functions
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      refreshTimer = setInterval(() => {
+        fetchJobs();
+      }, refreshInterval);
+    }
+    
+    function stopAutoRefresh() {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+      }
+    }
+    
+    function updateLastUpdated() {
+      const now = new Date();
+      lastUpdatedSpan.textContent = now.toLocaleTimeString();
+    }
+    
+    async function fetchJobs() {
+      try {
+        const response = await fetch('/process-status');
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}`);
+        }
+        
+        const data = await response.json();
+        renderJobs(data);
+        updateLastUpdated();
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+        jobsContainer.innerHTML = `
+          <div class="error-message">
+            <strong>Error loading jobs:</strong> ${error.message}
+          </div>
+        `;
+      }
+    }
+    
+    function renderJobs(data) {
+      const jobs = Object.values(data);
+      
+      if (jobs.length === 0) {
+        jobsContainer.innerHTML = `
+          <div class="no-jobs">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+            <h3>No Jobs Found</h3>
+            <p>No processing jobs are currently running or completed.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Sort jobs - active first, then by start time descending
+      jobs.sort((a, b) => {
+        if (a.is_processing !== b.is_processing) {
+          return a.is_processing ? -1 : 1;
+        }
+        if (a.start_time && b.start_time) {
+          return b.start_time - a.start_time;
+        }
+        return 0;
+      });
+      
+      jobsContainer.innerHTML = `
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>File Name</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th>Start Time</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${jobs.map(job => renderJobRow(job)).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      // Add event listeners to job links
+      const jobLinks = document.querySelectorAll('.job-id-link');
+      jobLinks.forEach(link => {
+        link.addEventListener('click', async function(e) {
+          e.preventDefault();
+          const jobId = this.dataset.jobid;
+          showJobDetail(jobId, data);
+        });
+      });
+    }
+    
+    function renderJobRow(job) {
+      const jobId = job.job_id || 'Unknown';
+      const fileName = job.file_name || 'Unknown';
+      const isProcessing = job.is_processing;
+      const hasError = job.error;
+      
+      // Status
+      let statusClass = 'status-completed';
+      let statusText = 'Completed';
+      if (hasError || job.status === 'error') {
+        statusClass = 'status-error';
+        statusText = 'Error';
+      } else if (job.status === 'queued') {
+        statusClass = 'status-active';
+        statusText = `Queued #${job.queue_position || '?'}`;
+      } else if (isProcessing) {
+        statusClass = 'status-active';
+        statusText = 'Processing';
+      }
+      
+      // Progress
+      const currentFrame = job.current_frame || 0;
+      const totalFrames = job.total_frames || 1;
+      const progressPercent = Math.round((currentFrame / totalFrames) * 100);
+      
+      // Times
+      let startTimeStr = 'Unknown';
+      let durationStr = '-';
+      const startedAt = job.start_time || job.submitted_time;
+      if (startedAt) {
+        const startTime = new Date(startedAt * 1000);
+        startTimeStr = startTime.toLocaleString();
+        
+        const endTime = job.end_time ? (job.end_time * 1000) : Date.now();
+        const duration = Math.round((endTime - (startedAt * 1000)) / 1000);
+        durationStr = formatDuration(duration);
+      }
+      
+      return `
+        <tr>
+          <td>
+            <a href="#" class="job-id-link" data-jobid="${jobId}" title="Click to view details">
+              ${jobId.substring(0, 8)}...
+            </a>
+          </td>
+          <td title="${fileName}">${truncateText(fileName, 30)}</td>
+          <td>
+            <div class="progress-container">
+              <div class="progress-bar" style="width: ${progressPercent}%">
+                ${progressPercent}%
+              </div>
+            </div>
+            <div class="progress-text">${currentFrame}/${totalFrames} frames</div>
+          </td>
+          <td>
+            <span class="status-badge ${statusClass}">${statusText}</span>
+          </td>
+          <td>${startTimeStr}</td>
+          <td>${durationStr}</td>
+        </tr>
+      `;
+    }
+    
+    function showJobDetail(jobId, allJobs) {
+      const job = allJobs[jobId] || Object.values(allJobs).find(j => j.job_id === jobId);
+      
+      if (!job) {
+        alert('Job not found: ' + jobId);
+        return;
+      }
+      
+      // Render job details
+      modalBody.innerHTML = renderJobDetails(job);
+      
+      // Show modal
+      jobDetailModal.style.display = 'flex';
+      
+      // If job is completed and has video, try to load it
+      if (!job.is_processing && job.final_output_filename) {
+        loadJobVideo(job);
+      }
+    }
+    
+    function renderJobDetails(job) {
+      const startTime = job.start_time ? new Date(job.start_time * 1000).toLocaleString() : 'Unknown';
+      const endTime = job.end_time ? new Date(job.end_time * 1000).toLocaleString() : 'Not finished';
+      const duration = job.start_time && job.end_time ? 
+        formatDuration(job.end_time - job.start_time) : 'Calculating...';
+      
+      let videoSection = '';
+      if (!job.is_processing && (job.final_output_filename || job.video_ready)) {
+        videoSection = `
+          <div class="video-player-container">
+            <h4>🎥 Processed Video</h4>
+            <video id="jobVideo" controls style="width: 100%; max-height: 300px; background: #000; border-radius: 8px;">
+              <source src="" type="video/mp4">
+              Your browser does not support video playback.
+            </video>
+            <div class="video-controls">
+              <button onclick="playJobVideo()" class="btn">Play</button>
+              <button onclick="openJobVideoInNewTab()" class="btn btn-success">Open in New Tab</button>
+            </div>
+            <div id="videoStatus" style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b;">
+              Loading video...
+            </div>
+          </div>
+        `;
+      }
+      
+      return `
+        <div class="job-details">
+          <div class="detail-item">
+            <div class="detail-label">Job ID</div>
+            <div class="detail-value">${job.job_id || 'Unknown'}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">File Name</div>
+            <div class="detail-value">${job.file_name || 'Unknown'}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Status</div>
+            <div class="detail-value">
+              <span class="status-badge ${job.is_processing ? 'status-active' : 'status-completed'}">
+                ${job.is_processing ? 'Processing' : 'Completed'}
+              </span>
+            </div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Progress</div>
+            <div class="detail-value">${job.current_frame || 0}/${job.total_frames || 0} frames</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Start Time</div>
+            <div class="detail-value">${startTime}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">End Time</div>
+            <div class="detail-value">${endTime}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Duration</div>
+            <div class="detail-value">${duration}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Browser Session</div>
+            <div class="detail-value">${job.browser_session || 'Unknown'}</div>
+          </div>
+        </div>
+        
+        ${videoSection}
+        
+        <div class="json-details">
+          <h4>📄 Raw Job Data</h4>
+          <div class="json-content">${JSON.stringify(job, null, 2)}</div>
+        </div>
+      `;
+    }
+    
+    function loadJobVideo(job) {
+      const video = document.getElementById('jobVideo');
+      const videoStatus = document.getElementById('videoStatus');
+      
+      if (!video || !job.final_output_filename) return;
+      
+      // Possible video paths to try
+      const videoPaths = [
+        `/videos/${job.final_output_filename}`,
+        `/processed_videos/${job.final_output_filename}`,
+        `/videos/web_${job.final_output_filename}`,
+        `/processed_videos/web_${job.final_output_filename}`
+      ];
+      
+      let currentPathIndex = 0;
+      
+      function tryNextPath() {
+        if (currentPathIndex >= videoPaths.length) {
+          videoStatus.innerHTML = '<span style="color: #dc2626;">❌ Video file not accessible</span>';
+          return;
+        }
+        
+        const currentPath = videoPaths[currentPathIndex];
+        videoStatus.textContent = `Trying: ${currentPath}`;
+        
+        // Test if video exists
+        fetch(currentPath, { method: 'HEAD' })
+          .then(response => {
+            if (response.ok) {
+              video.src = currentPath;
+              video.load();
+              videoStatus.innerHTML = `<span style="color: #16a34a;">✅ Video loaded: ${currentPath}</span>`;
+              
+              // Store working path for other functions
+              window.currentJobVideoPath = currentPath;
+            } else {
+              currentPathIndex++;
+              tryNextPath();
+            }
+          })
+          .catch(error => {
+            currentPathIndex++;
+            tryNextPath();
+          });
+      }
+      
+      tryNextPath();
+    }
+    
+    function playJobVideo() {
+      const video = document.getElementById('jobVideo');
+      if (video && video.src) {
+        video.play();
+      }
+    }
+    
+    function openJobVideoInNewTab() {
+      if (window.currentJobVideoPath) {
+        window.open(window.currentJobVideoPath, '_blank');
+      }
+    }
+    
+    function closeJobDetailModal() {
+      jobDetailModal.style.display = 'none';
+      
+      // Clean up video
+      const video = document.getElementById('jobVideo');
+      if (video) {
+        video.pause();
+        video.src = '';
+      }
+      window.currentJobVideoPath = null;
+    }
+    
+    // Utility functions
+    function formatDuration(seconds) {
+      if (seconds < 60) {
+        return `${seconds}s`;
+      } else if (seconds < 3600) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}m ${remainingSeconds}s`;
+      } else {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return `${hours}h ${minutes}m`;
+      }
+    }
+    
+    function truncateText(text, maxLength) {
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + '...';
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeJobDetailModal();
+      } else if (e.key === 'r' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        fetchJobs();
+      }
+    });
+    
+    console.log('AdSwap AI Admin Dashboard Loaded');
+  </script>
+</body>
+</html>

@@ -1,0 +1,712 @@
+<!-- AdSwapAI R&D, 2025-05-08: inline single-page UI for the first synchronous Flask version -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Altervision Billboard Processing Tool</title>
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2c3e50;
+      --accent-color: #e74c3c;
+      --light-color: #ecf0f1;
+      --dark-color: #34495e;
+      --success-color: #2ecc71;
+      --border-radius: 6px;
+      --box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--dark-color);
+      background-color: #f5f7fa;
+      padding: 20px;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    h1 {
+      color: var(--secondary-color);
+      margin-bottom: 10px;
+    }
+    
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .panel {
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .panel h2 {
+      margin-bottom: 15px;
+      color: var(--secondary-color);
+      font-size: 1.5rem;
+      border-bottom: 2px solid var(--light-color);
+      padding-bottom: 10px;
+    }
+    
+    .panel h3 {
+      margin: 15px 0 10px;
+      color: var(--secondary-color);
+      font-size: 1.2rem;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    
+    .radio-group {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      font-weight: normal;
+      cursor: pointer;
+    }
+    
+    .radio-group input {
+      margin-right: 5px;
+    }
+    
+    input[type="file"] {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      margin-bottom: 10px;
+    }
+    
+    input[type="range"] {
+      width: 100%;
+      margin: 5px 0;
+    }
+    
+    input[type="color"] {
+      padding: 0;
+      width: 50px;
+      height: 30px;
+    }
+    
+    .value-display {
+      display: inline-block;
+      width: 40px;
+      text-align: right;
+      font-weight: 500;
+    }
+    
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: #2980b9;
+    }
+    
+    /* Thumbnail gallery styles */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+    }
+    
+    .thumbnail {
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      transition: all 0.2s;
+      position: relative;
+    }
+    
+    .thumbnail img {
+      width: 100%;
+      height: 80px;
+      object-fit: cover;
+      display: block;
+    }
+    
+    .thumbnail.selected {
+      border-color: var(--primary-color);
+      transform: scale(1.05);
+    }
+    
+    .thumbnail.video-thumbnail::after {
+      content: '▶';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 24px;
+      text-shadow: 0 0 4px rgba(0,0,0,0.7);
+    }
+    
+    .image-preview {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      margin-top: 15px;
+    }
+    
+    .image-preview img {
+      width: 100%;
+      height: 200px;
+      object-fit: contain;
+      display: block;
+    }
+    
+    /* Video result styles */
+    .result-container {
+      margin-top: 30px;
+      text-align: center;
+    }
+    
+    #progress {
+      padding: 10px;
+      margin-bottom: 15px;
+      font-weight: 500;
+      min-height: 40px;
+    }
+    
+    #resultVid {
+      max-width: 100%;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      background: #000;
+    }
+    
+    .hide {
+      display: none;
+    }
+    
+    .video-upload-container {
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="images/logo.png" height="256" width="500" />
+    <h1>Billboard Processing Tool</h1>
+    <p>Upload a video and process billboards with customizable settings</p>
+  </header>
+  
+  <div class="container">
+    <div class="left-column">
+      <form id="procForm">
+        <div class="panel">
+          <h2>Processing Mode</h2>
+          <div class="radio-group">
+            <label><input type="radio" name="mode" value="mask" checked> Color Mask</label>
+            <label><input type="radio" name="mode" value="image"> Image Replace</label>
+          </div>
+          
+          <div id="maskControls">
+            <h3>Mask Appearance</h3>
+            <div class="form-group">
+              <label>Color: <input type="color" id="maskColor" value="#00FF00"></label>
+            </div>
+            <div class="form-group">
+              <label>Opacity: <span id="alphaValue" class="value-display">0.5</span></label>
+              <input type="range" id="maskAlpha" min="0.1" max="1.0" step="0.1" value="0.5">
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <h2>Input Video</h2>
+          <div class="radio-group">
+            <label><input type="radio" name="videoSource" value="sample" checked> Use Sample Video</label>
+            <label><input type="radio" name="videoSource" value="upload"> Upload Video</label>
+          </div>
+          
+          <div id="sampleVideoContainer">
+            <p>Select a sample video:</p>
+            <div class="gallery" id="videoGallery">
+              <!-- Video thumbnails will be populated by JavaScript -->
+            </div>
+          </div>
+          
+          <div id="uploadVideoContainer" class="hide">
+            <div class="form-group">
+              <label for="video">Upload Video:</label>
+              <input type="file" id="video" accept="video/*">
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <h2>Detection Settings</h2>
+          <h3>Billboard Detection</h3>
+          <div class="form-group">
+            <label>Confidence Threshold: <span id="threshValue" class="value-display">0.5</span></label>
+            <input type="range" id="confThreshold" min="0.1" max="0.9" step="0.1" value="0.5">
+          </div>
+          
+          <div class="form-group">
+            <label>Min Billboard Size (%): <span id="sizeValue" class="value-display">0</span></label>
+            <input type="range" id="minMaskSize" min="0" max="0.5" step="0.01" value="0">
+          </div>
+          
+          <h3>Human Detection</h3>
+          <div class="form-group">
+            <label>Human Detection Threshold: <span id="humanThreshValue" class="value-display">0.5</span></label>
+            <input type="range" id="humanConfThreshold" min="0.1" max="0.9" step="0.1" value="0.5">
+          </div>
+          
+          <div class="form-group">
+            <label><input type="checkbox" id="enableHumanFilter" checked> Remove billboards from human areas</label>
+          </div>
+        </div>
+        
+        <button type="submit">Process Video</button>
+      </form>
+    </div>
+    
+    <div class="right-column">
+      <div class="panel" id="imageSelectPanel">
+        <h2>Select Replacement Image</h2>
+        <p>Click on a thumbnail to select a replacement image:</p>
+        
+        <div class="gallery" id="thumbnailGallery">
+          <!-- Thumbnails will be populated by JavaScript -->
+        </div>
+        
+        <div class="image-preview" id="previewContainer">
+          <img id="previewImage" src="" alt="Preview">
+        </div>
+      </div>
+      
+      <div class="panel" id="resultPanel">
+        <h2>Results</h2>
+        <div id="progress">Ready to process video</div>
+        <video id="resultVid" controls style="display:none; width:100%;"></video>
+      </div>
+    </div>  
+
+  <script>
+    // List of available billboard images
+    const billboardImages = [
+      'bilboards0.jpg',
+      'bilboards1.jpg',
+      'bilboards2.jpg',
+      'bilboards3.jpg',
+      'bilboards4.jpg',
+      'bilboards5.jpg',
+      'bilboards6.jpg',
+      'bilboards7.jpg',
+      'bilboards8.jpg',
+      'bilboards9.jpg',
+      'bilboardsArtboard1.jpg',      
+      'bilboardsArtboard2.jpg',
+      'bilboardsArtboard3.jpg',
+      'bilboardsArtboard4.jpg',
+      'bilboardsArtboard5.jpg',
+      'bilboardsArtboard6.jpg',
+      'bilboardsArtboard7.jpg',
+      'bilboardsArtboard8.jpg',
+      'bilboardsArtboard9.jpg',
+      'bilboardsArtboard10.jpg'
+    ];
+    
+    // List of available sample videos
+    const sampleVideos = [
+      '1.mp4',
+      '2.mp4',
+      '3.mp4'
+    ];
+    
+    // Selected image path
+    let selectedImage = billboardImages[0];
+    let selectedVideo = sampleVideos[0];
+    
+    // DOM elements
+    const form = document.getElementById('procForm');
+    const progress = document.getElementById('progress');
+    const resultVid = document.getElementById('resultVid');
+    const maskAlphaSlider = document.getElementById('maskAlpha');
+    const alphaValueSpan = document.getElementById('alphaValue');
+    const confThreshSlider = document.getElementById('confThreshold');
+    const threshValueSpan = document.getElementById('threshValue');
+    const minMaskSizeSlider = document.getElementById('minMaskSize');
+    const sizeValueSpan = document.getElementById('sizeValue');
+    const humanConfThreshSlider = document.getElementById('humanConfThreshold');
+    const humanThreshValueSpan = document.getElementById('humanThreshValue');
+    const maskControls = document.getElementById('maskControls');
+    const imageSelectPanel = document.getElementById('imageSelectPanel');
+    const gallery = document.getElementById('thumbnailGallery');
+    const previewImage = document.getElementById('previewImage');
+    const videoGallery = document.getElementById('videoGallery');
+    const sampleVideoContainer = document.getElementById('sampleVideoContainer');
+    const uploadVideoContainer = document.getElementById('uploadVideoContainer');
+    
+    // Populate gallery with thumbnails
+    function populateGallery() {
+      // Clear gallery first in case it's being re-initialized
+      gallery.innerHTML = '';
+      
+      billboardImages.forEach((image, index) => {
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'thumbnail';
+        if (index === 0) thumbnail.classList.add('selected');
+        
+        const img = document.createElement('img');
+        img.src = `/images/${image}`;
+        img.alt = image;
+        
+        // Add error handling for images
+        img.onerror = function() {
+          console.error(`Failed to load image: ${image}`);
+          this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="80" viewBox="0 0 100 80"%3E%3Crect width="100" height="80" fill="%23f0f0f0"/%3E%3Ctext x="50%" y="50%" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not found%3C/text%3E%3C/svg%3E';
+        };
+        
+        thumbnail.appendChild(img);
+        
+        // Use a closure to ensure each thumbnail gets the correct image reference
+        thumbnail.addEventListener('click', (function(imageName, thumbElement) {
+          return function() {
+            selectImage(imageName, thumbElement);
+          };
+        })(image, thumbnail));
+        
+        gallery.appendChild(thumbnail);
+      });
+      
+      // Set initial preview
+      previewImage.src = `/images/${selectedImage}`;
+      
+      // Add error handling for preview image
+      previewImage.onerror = function() {
+        console.error(`Failed to load preview: ${selectedImage}`);
+        this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"%3E%3Crect width="200" height="150" fill="%23f0f0f0"/%3E%3Ctext x="50%" y="50%" font-family="Arial" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EPreview not available%3C/text%3E%3C/svg%3E';
+      };
+    }
+    
+    // Populate video gallery
+    function populateVideoGallery() {
+      videoGallery.innerHTML = '';
+      
+      sampleVideos.forEach((video, index) => {
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'thumbnail video-thumbnail';
+        if (index === 0) thumbnail.classList.add('selected');
+        
+        // Create a video element to capture a frame for thumbnail
+        const vid = document.createElement('video');
+        vid.src = `/sampleVideos/${video}`;
+        vid.muted = true;
+        vid.currentTime = 1; // Try to get frame at 1 second
+        
+        // Create thumbnail image from video
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        vid.addEventListener('loadeddata', function() {
+          canvas.width = 100;
+          canvas.height = 80;
+          ctx.drawImage(vid, 0, 0, 100, 80);
+          
+          const img = document.createElement('img');
+          img.src = canvas.toDataURL('image/jpeg');
+          img.alt = video;
+          
+          thumbnail.appendChild(img);
+        });
+        
+        // Fallback if video thumbnail fails
+        vid.onerror = function() {
+          const img = document.createElement('img');
+          img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="80" viewBox="0 0 100 80"%3E%3Crect width="100" height="80" fill="%23f0f0f0"/%3E%3Ctext x="50%" y="50%" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3E' + video + '%3C/text%3E%3C/svg%3E';
+          thumbnail.appendChild(img);
+        };
+        
+        // Add click handler
+        thumbnail.addEventListener('click', (function(videoName, thumbElement) {
+          return function() {
+            selectVideo(videoName, thumbElement);
+          };
+        })(video, thumbnail));
+        
+        videoGallery.appendChild(thumbnail);
+      });
+    }
+
+    // Select an image
+    function selectImage(image, thumbnailElement) {
+      console.log(`Selecting image: ${image}`);
+      selectedImage = image;
+      
+      // Update selected class
+      gallery.querySelectorAll('.thumbnail').forEach(thumb => {
+        thumb.classList.remove('selected');
+      });
+      thumbnailElement.classList.add('selected');
+      
+      // Update preview
+      previewImage.src = `/images/${image}`;
+    }
+    
+    // Select a video
+    function selectVideo(video, thumbnailElement) {
+      console.log(`Selecting video: ${video}`);
+      selectedVideo = video;
+      
+      // Update selected class
+      videoGallery.querySelectorAll('.thumbnail').forEach(thumb => {
+        thumb.classList.remove('selected');
+      });
+      thumbnailElement.classList.add('selected');
+    }
+    
+    // Update input display values
+    maskAlphaSlider.addEventListener('input', () => {
+      alphaValueSpan.textContent = maskAlphaSlider.value;
+    });
+    
+    confThreshSlider.addEventListener('input', () => {
+      threshValueSpan.textContent = confThreshSlider.value;
+    });
+    
+    minMaskSizeSlider.addEventListener('input', () => {
+      sizeValueSpan.textContent = Math.round(minMaskSizeSlider.value * 100);
+    });
+    
+    humanConfThreshSlider.addEventListener('input', () => {
+      humanThreshValueSpan.textContent = humanConfThreshSlider.value;
+    });
+    
+    // Show/hide relevant sections based on processing mode
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+      radio.addEventListener('change', e => {
+        if (e.target.value === 'mask') {
+          maskControls.classList.remove('hide');
+          imageSelectPanel.classList.add('hide');
+        } else {
+          maskControls.classList.add('hide');
+          imageSelectPanel.classList.remove('hide');
+        }
+      });
+    });
+    
+    // Show/hide video selection based on video source
+    document.querySelectorAll('input[name="videoSource"]').forEach(radio => {
+      radio.addEventListener('change', e => {
+        if (e.target.value === 'sample') {
+          sampleVideoContainer.classList.remove('hide');
+          uploadVideoContainer.classList.add('hide');
+          document.getElementById('video').required = false;
+        } else {
+          sampleVideoContainer.classList.add('hide');
+          uploadVideoContainer.classList.remove('hide');
+          document.getElementById('video').required = true;
+        }
+      });
+    });
+    
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      progress.textContent = 'Uploading...';
+      resultVid.style.display = 'none';
+      
+      const formData = new FormData();
+      const mode = form.mode.value;
+      const videoSource = form.videoSource.value;
+      
+      formData.append('mode', mode);
+      
+      // Add video based on source
+      if (videoSource === 'sample') {
+        // For sample videos, fetch the video and send as a file
+        try {
+          progress.textContent = 'Loading sample video...';
+          const response = await fetch(`/sampleVideos/${selectedVideo}`);
+          if (!response.ok) {
+            throw new Error(`Failed to load video: ${response.statusText}`);
+          }
+          const blob = await response.blob();
+          formData.append('video', new File([blob], selectedVideo, { type: 'video/mp4' }));
+        } catch (error) {
+          progress.textContent = `Error loading sample video: ${error.message}`;
+          return;
+        }
+      } else {
+        // For uploaded videos
+        const videoFile = document.getElementById('video').files[0];
+        if (!videoFile) {
+          progress.textContent = 'Please select a video file';
+          return;
+        }
+        formData.append('video', videoFile);
+      }
+      
+      // Add detection parameters
+      formData.append('conf_threshold', confThreshSlider.value);
+      formData.append('min_mask_size', minMaskSizeSlider.value);
+      formData.append('human_conf_threshold', humanConfThreshSlider.value);
+      formData.append('enable_human_filter', document.getElementById('enableHumanFilter').checked);
+      
+      // Add mode-specific parameters
+      if (mode === 'mask') {
+        // Convert the color hex value to RGB
+        const colorHex = document.getElementById('maskColor').value;
+        const r = parseInt(colorHex.substr(1, 2), 16);
+        const g = parseInt(colorHex.substr(3, 2), 16);
+        const b = parseInt(colorHex.substr(5, 2), 16);
+        
+        formData.append('mask_color_r', r);
+        formData.append('mask_color_g', g);
+        formData.append('mask_color_b', b);
+        formData.append('mask_alpha', maskAlphaSlider.value);
+      } else {
+        try {
+          const response = await fetch(`/images/${selectedImage}`);
+          const blob = await response.blob();
+          formData.append('replacement', new File([blob], selectedImage, { type: 'image/jpeg' }));
+        } catch (error) {
+          progress.textContent = `Error loading image: ${error.message}`;
+          return;
+        }
+      }
+      
+      try {
+        // Upload and process the video
+        progress.textContent = 'Processing video... Please wait.';
+        
+        const resp = await fetch('/process', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!resp.ok) {
+          progress.textContent = `Error: ${resp.statusText || 'Server error'}`;
+          console.error('Server returned error:', resp.status, resp.statusText);
+          return;
+        }
+        
+        // Parse the JSON response to get the video path
+        const data = await resp.json();
+        
+        if (data.success && data.path) {
+          // Show success message
+          progress.textContent = 'Processing complete! Loading video...';
+          
+          // Convert the backend path to frontend path
+          // Backend returns paths like /workspace/processed_videos/filename
+          // Frontend expects paths like /processed_videos/filename
+          let videoPath = data.path;
+          if (videoPath.startsWith('/workspace/processed_videos/')) {
+            videoPath = videoPath.replace('/workspace/processed_videos/', '/processed_videos/');
+          }
+          
+          // Display the video
+          resultVid.src = videoPath;
+          console.log("Setting video source to:", videoPath);
+          
+          // Add error handler for debugging
+          resultVid.onerror = function() {
+            console.error("Video playback error:", resultVid.error);
+            progress.textContent = `Error playing video: ${resultVid.error ? resultVid.error.message : 'Unknown error'} (Path: ${data.path})`;
+          };
+          
+          // Show when video is ready to play
+          resultVid.onloadeddata = function() {
+            progress.textContent = 'Video ready!';
+          };
+          
+          resultVid.load();
+          resultVid.style.display = 'block';
+        } else {
+          progress.textContent = 'Error: Could not get processed video path.';
+        }
+      } catch (error) {
+        progress.textContent = `Error: ${error.message || 'Connection failed'}`;
+        console.error('Processing error:', error);
+      }
+    });
+    
+    // Initialize UI
+    window.addEventListener('DOMContentLoaded', () => {
+      // Initialize image gallery
+      populateGallery();
+      
+      // Initialize video gallery
+      populateVideoGallery();
+      
+      // Set initial visibility based on default mode
+      const initialMode = document.querySelector('input[name="mode"]:checked').value;
+      if (initialMode === 'mask') {
+        maskControls.classList.remove('hide');
+        imageSelectPanel.classList.add('hide');
+      } else {
+        maskControls.classList.add('hide');
+        imageSelectPanel.classList.remove('hide');
+      }
+      
+      // Set initial video source visibility
+      const initialVideoSource = document.querySelector('input[name="videoSource"]:checked').value;
+      if (initialVideoSource === 'sample') {
+        sampleVideoContainer.classList.remove('hide');
+        uploadVideoContainer.classList.add('hide');
+        document.getElementById('video').required = false;
+      } else {
+        sampleVideoContainer.classList.add('hide');
+        uploadVideoContainer.classList.remove('hide');
+        document.getElementById('video').required = true;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!-- AdSwapAI R&D, 2025-01-18: click-to-detect frontend (upload + click canvas). -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Selection</title>
+</head>
+<body>
+    <h1>Object Selection Demo</h1>
+
+    <!-- Image upload area -->
+    <label for="upload">Upload an image:</label>
+    <input type="file" id="upload" accept="image/*">
+    <br><br>
+
+    <!-- Canvas for the image -->
+    <canvas id="canvas" style="border:1px solid black"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const uploadInput = document.getElementById('upload');
+        let img = new Image();
+
+        // When the image is loaded
+        uploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                alert("Please select an image file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                img.src = e.target.result; // Load the image
+                img.onload = () => {
+                    // Resize the canvas to match the image dimensions
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    // Draw the image on the canvas
+                    ctx.drawImage(img, 0, 0);
+
+                    // Send the image to the backend
+                    const formData = new FormData();
+                    formData.append('image', file);
+
+                    fetch('http://localhost:5000/upload', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log('Image uploaded successfully:', data))
+                    .catch(error => console.error('Error uploading image:', error));
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Listen for click events on the canvas
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left; // x within the canvas
+            const y = e.clientY - rect.top;  // y within the canvas
+
+            // Send the click coordinates to the backend
+            fetch('http://localhost:5000/select', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ x, y }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Draw the bounding box
+                const { x1, y1, x2, y2, label, score } = data.bounding_box;
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                // Print the label and confidence score
+                ctx.font = '16px Arial';
+                ctx.fillStyle = 'red';
+                ctx.fillText(`${label} (${(score * 100).toFixed(1)}%)`, x1, y1 - 5);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>

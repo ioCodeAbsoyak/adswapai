@@ -1,0 +1,11 @@
+FROM nginx:stable-alpine
+
+# Custom config: static site + reverse proxy for the backend API
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Static site (pages, css, images, sample videos)
+COPY static/ /usr/share/nginx/html/
+
+EXPOSE 80
+# 127.0.0.1 on purpose: inside Alpine "localhost" resolves to ::1 first and nginx listens on IPv4 only
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1

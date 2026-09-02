@@ -1,0 +1,31 @@
+# AdSwapAI R&D, 2025-01-28: video-frame detection stack (frontend + GPU backend + video server).
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]  # Request GPU access
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+  video_server:
+    build:
+      context: ./video_server
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./video_server/videos:/app/videos
