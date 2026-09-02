@@ -90,6 +90,9 @@ timestamps.
   than 8 % of the frame: the huge boxes in the overlays are the bounding boxes
   of long slanted strips, not crowd masks.
 * The zoom crop (upper 5-60 % band) did not add recall; not needed.
+
+<p align="center"><img src="../../docs/images/sam3_prompt_sponsor_banner_sheet.jpg" width="900"><br>
+<sub>"sponsor banner", threshold 0.2: rows = clips 1/2/3, columns = 1/4/8/11 s. Every board is found, including the far LED strips in the wide shots.</sub></p>
 * Remaining precision problems: overlapping duplicates (a board found as a
   whole and as its sponsor panels), the broadcaster score bug, crowd flags.
   Plan: threshold 0.3-0.4, mask-IoU de-duplication, a HUD exclusion zone.
@@ -107,7 +110,63 @@ a contact sheet and a stats JSON (unique ids, frames per id, fps). What we
 want to see: each board keeps one id for the whole clip, ids do not swap or
 multiply, masks stay tight when players pass in front, and a usable fps.
 
-Step 4 (replacement) is added once step 3 is convincing.
+### Findings (clip 2, 150 frames, "sponsor banner", threshold 0.3, SAM3 video predictor)
+
+* Clip 2 contains a camera cut at about frame 45 (close-up of a player until
+  frame ~120, then back to the wide shot). The tracker correctly holds 11
+  boards before the cut, tracks nothing during the close-up and re-detects
+  the boards after it, re-using most of the old ids (ids 1, 3, 5-9 appear in
+  both wide segments). Any pipeline needs a shot-cut detector anyway.
+* One persistent false object: the broadcaster's top band (id 4, present in
+  136 of 151 frames). A HUD exclusion zone fixes it.
+* Speed is the problem: 0.24 fps overall. Median 0.9 s per frame, but the
+  periodic re-detection frames take 10-60 s (p90 = 10.8 s) and VRAM peaks at
+  15 GB with `offload_video_to_cpu=True`. The image model finds the same
+  boards in 140 ms per frame.
+* Next: the SAM 3.1 "multiplex" predictor (built for many objects), then, if
+  still too slow, a hybrid: SAM3 image detection every frame + our own
+  IoU/Kalman association.
+
+### Hybrid tracker (`sam3_hybrid_track.py`, same clip and frames)
+
+SAM3 image model on every frame + mask de-duplication (IoU > 0.6 or 80 %
+containment), HUD exclusion (top 8 %), IoU association with a 5-frame hold,
+histogram-based shot-cut detection.
+
+| | SAM3 video predictor | hybrid |
+|---|---|---|
+| speed | 0.24 fps, spikes of 10-60 s | 3.4 fps, median 251 ms, no spikes |
+| shot cut | survives it, re-uses most ids | detected at frames 46 and 112 (correct), ids reset |
+| close-up segment | one persistent false object (top band) | 0 objects |
+| id stability | 11 ids stable in the first segment | 9 boards stable for all 46 frames, but 56 ids in total: some panels flicker between "whole board" and "single sponsor panel" detections and spawn short-lived ids |
+
+Speed favours the hybrid, mask/id consistency favours the video predictor.
+
+<p align="center"><img src="../../docs/images/sam3_hybrid_tracking_clip2.jpg" width="640"><br>
+<sub>Hybrid tracker on clip 2: frames 0, 25 (wide shot, 13-16 tracks), 50-100 (close-up after the cut, nothing), 125 (back to the wide shot, new ids).</sub></p>
+
+### SAM 3.1 multiplex predictor (`VERSION = "sam3.1"`)
+
+Two Windows-specific problems had to be worked around in `sam3_video_probe.py`:
+the base predictor passes `offload_state_to_cpu` to the 3.1 model's
+`init_state`, which rejects it (wrapped to drop the argument), and the 3.1
+decoder pins scaled-dot-product attention to the flash kernel, which raises
+"No available kernel" on this torch/Blackwell build (`sdpa_kernel` is
+replaced by a permissive one). With that, the text prompt on frame 0 took
+**0.85 s for 9 objects** (SAM3: 8.6 s), but the propagation then died
+silently (no Python traceback, VRAM at 15.8 GB). Not measured yet; retry
+with `max_num_objects` lowered and the video offloaded to CPU.
+
+### Where we are (end of 2 Sep 2026)
+
+* Detection: solved by prompt choice ("sponsor banner" / "advertisement",
+  threshold 0.3-0.4), sharp masks, ~200 ms per frame.
+* Tracking: the architecture is "detect on the first frame and on events
+  (shot cut, new object), track in between". What fills the gap between
+  detections is open: SAM 3.1 (quality, if it runs in 16 GB) or our own
+  propagation (camera-motion homography + IoU association, fast). The
+  homography is needed for step 4 anyway.
+* Step 4 (board-space replacement) starts once the tracker choice is made.
 
 ## Access
 

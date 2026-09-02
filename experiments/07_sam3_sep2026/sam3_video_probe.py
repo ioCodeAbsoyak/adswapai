@@ -21,6 +21,7 @@ START_FRAME = 0                      # frame index that receives the prompt
 MAX_FRAMES = 150                     # frames to propagate (None = whole clip)
 PROB_THRESH = 0.3                    # output probability threshold
 OFFLOAD_VIDEO_TO_CPU = True          # keep decoded frames in RAM instead of VRAM
+VERSION = "sam3.1"                   # "sam3" (original video predictor) or "sam3.1" (multiplex tracker, many objects)
 OUTPUT_DIR = "output/video_probe"
 # --------------------------------------------------------------------------------------
 
@@ -71,8 +72,33 @@ def main():
     print(f"{VIDEO}: {width}x{height} @ {fps:.2f} fps, {total} frames")
 
     t0 = time.time()
-    predictor = build_sam3_video_predictor()          # downloads facebook/sam3 on first run
-    print(f"video predictor ready in {time.time() - t0:.1f}s")
+    if VERSION == "sam3":
+        predictor = build_sam3_video_predictor()      # downloads facebook/sam3 on first run
+    else:
+        from sam3.model_builder import build_sam3_predictor
+        # The 3.1 decoder pins scaled_dot_product_attention to the flash kernel, which
+        # is not available for every shape on Windows / Blackwell ("No available
+        # kernel"). Let PyTorch fall back to the efficient or math kernels.
+        import torch
+        from torch.nn.attention import SDPBackend, sdpa_kernel
+        import sam3.model.decoder as _decoder
+
+        def _permissive_sdpa(*args, **kwargs):
+            return sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION, SDPBackend.MATH])
+
+        _decoder.sdpa_kernel = _permissive_sdpa
+        # compile / flash-attention 3 are Linux-only conveniences; off on Windows
+        predictor = build_sam3_predictor(version=VERSION, compile=False, use_fa3=False, warm_up=False)
+        # sam3 0.1.0: the base predictor passes offload_state_to_cpu, which the
+        # multiplex model's init_state does not accept. Drop it.
+        _orig_init_state = predictor.model.init_state
+
+        def _init_state(*args, **kwargs):
+            kwargs.pop("offload_state_to_cpu", None)
+            return _orig_init_state(*args, **kwargs)
+
+        predictor.model.init_state = _init_state
+    print(f"video predictor ({VERSION}) ready in {time.time() - t0:.1f}s")
 
     session = predictor.handle_request({
         "type": "start_session", "resource_path": VIDEO,
@@ -89,7 +115,8 @@ def main():
           f"in {(time.time() - t1) * 1000:.0f} ms, ids={first['outputs']['out_obj_ids'].tolist()}")
 
     stem = Path(VIDEO).stem
-    out_path = os.path.join(OUTPUT_DIR, f"{stem}_{PROMPT.replace(' ', '_')}_track.mp4")
+    tag = f"{stem}_{PROMPT.replace(' ', '_')}_{VERSION.replace('.', '')}"
+    out_path = os.path.join(OUTPUT_DIR, f"{tag}_track.mp4")
     writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
     stats = []
     id_counter = Counter()
@@ -112,10 +139,10 @@ def main():
             break
         img = draw(frame, o, fi, dt_ms)
         writer.write(img)
-        ids = [int(i) for i in o["out_obj_ids"]]
+        ids = [int(i) for i in o.get("out_obj_ids", [])]
         id_counter.update(ids)
-        stats.append({"frame": int(fi), "ids": ids, "probs": [round(float(p), 3) for p in o["out_probs"]],
-                      "mask_area_pct": [round(float(m.sum()) * 100 / m.size, 2) for m in o["out_binary_masks"]],
+        stats.append({"frame": int(fi), "ids": ids, "probs": [round(float(p), 3) for p in o.get("out_probs", [])],
+                      "mask_area_pct": [round(float(m.sum()) * 100 / m.size, 2) for m in o.get("out_binary_masks", [])],
                       "ms": round(dt_ms)})
         if n % 25 == 0 or fi == START_FRAME:
             sheet_frames[fi] = img
@@ -134,7 +161,7 @@ def main():
         "frames_per_id": dict(sorted(id_counter.items())),
         "avg_objects_per_frame": round(sum(len(s["ids"]) for s in stats) / max(n, 1), 2),
     }
-    with open(os.path.join(OUTPUT_DIR, f"{stem}_{PROMPT.replace(' ', '_')}_stats.json"), "w", encoding="utf-8") as f:
+    with open(os.path.join(OUTPUT_DIR, f"{tag}_stats.json"), "w", encoding="utf-8") as f:
         json.dump({"summary": summary, "frames": stats}, f, indent=2)
 
     if sheet_frames:
@@ -142,7 +169,7 @@ def main():
         cells = [cv2.resize(sheet_frames[k], (640, int(height * 640 / width))) for k in keys]
         rows = [np.hstack(cells[i:i + 2]) if i + 1 < len(cells) else np.hstack([cells[i], np.zeros_like(cells[i])])
                 for i in range(0, len(cells), 2)]
-        cv2.imwrite(os.path.join(OUTPUT_DIR, f"{stem}_{PROMPT.replace(' ', '_')}_sheet.jpg"), np.vstack(rows),
+        cv2.imwrite(os.path.join(OUTPUT_DIR, f"{tag}_sheet.jpg"), np.vstack(rows),
                     [cv2.IMWRITE_JPEG_QUALITY, 80])
     print(json.dumps(summary, indent=2))
     print(f"video: {out_path}")

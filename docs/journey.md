@@ -251,6 +251,36 @@ Code: `app/`
 
 ---
 
+## 8 · SAM3: detection without a dataset (2 Sep 2026, ongoing)
+
+**Goal.** Make the POC good on the existing clips without labelling more
+data: replace per-frame Mask R-CNN with a prompt-based foundation model,
+then track instead of re-detecting.
+
+**Environment.** SAM3 on Windows needs a few things the package does not
+declare (einops, pycocotools, psutil, a community Triton build), bf16
+autocast around inference, and gated Hugging Face weights (manual approval
+by Meta). All of it is in `experiments/07_sam3_sep2026/README.md`.
+
+**Detection.** The prompt decides everything. "billboard" (the obvious
+choice) misses wide shots; "sponsor banner" and "advertisement" find every
+board in every sampled frame of the three clips, far LED strips included,
+with sharp masks, at ~200 ms per 1080p frame. No trained model involved.
+
+**Tracking, three ways on the same 150 frames.** SAM3's video predictor
+tracks well and survives a camera cut, but at 0.24 fps with 15 GB of VRAM;
+a hybrid (SAM3 image detection every frame + IoU association + histogram
+shot-cut detection) runs at 3.4 fps but fragments ids when a board is found
+as a whole in one frame and as its sponsor panels in the next; the SAM 3.1
+multiplex predictor prompts ten times faster than SAM3 but its propagation
+crashed at the VRAM limit and is not measured yet.
+
+**Decision pending.** The architecture is settled: detect on the first
+frame and on events (shot cuts, new boards), track in between, render each
+board in its own board-space so a half-visible board shows half an ad. Open
+question for the next session: whether SAM 3.1 or our own camera-motion
+propagation fills the frames between detections.
+
 ## Lessons
 
 * **Detection beat tracking.** Every manually initialised tracker (LK, SIFT,

@@ -13,6 +13,7 @@ one-line header `AdSwapAI R&D, <date>: <purpose>`.
 | `04_maskrcnn_replacement_apr2025/` | 18 Apr – 8 May 2025 | Detectron2 Mask R-CNN, perspective paste, two-stage pipeline, DeepSORT-style and RAFT tracking, rollback to per-frame |
 | `05_web_app_may2025/` | 8 May – 5 Jun 2025 | The Flask + nginx application used for the investor demo |
 | `06_sam2_baseline_aug2025/` | 25 Aug 2025 | SAM2 video predictor baseline, last experiment before the shelf |
+| `07_sam3_sep2026/` | 2 Sep 2026 → | **Active.** SAM3 text-prompted board detection (works), SAM3 / SAM 3.1 / hybrid tracking probes; next: board-space replacement |
 
 These are historical snapshots: they were cleaned (English comments, relative
 paths, a few one-line bug fixes noted in the READMEs) but not modernised.
