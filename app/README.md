@@ -1,7 +1,8 @@
 # AdSwapAI web application
 
-The current, working product: a Flask + Detectron2 backend behind an nginx
-static frontend, packaged with Docker Compose. Upload a sports clip (or pick a
+The 2025 application, previous generation (the current pipeline is the SAM3
+one in `experiments/07_sam3_sep2026/`): a Flask + Detectron2 backend behind
+an nginx static frontend, packaged with Docker Compose. It still runs. Upload a sports clip (or pick a
 bundled sample), choose an ad image or a colour mask, and get back a video in
 which every detected pitch-side board carries the new ad.
 

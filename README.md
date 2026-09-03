@@ -7,23 +7,25 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue.svg">
-  <img alt="PyTorch 2.7 · CUDA 12.8" src="https://img.shields.io/badge/PyTorch-2.7%20%C2%B7%20CUDA%2012.8-ee4c2c.svg">
-  <img alt="Detectron2 Mask R-CNN" src="https://img.shields.io/badge/Detectron2-Mask%20R--CNN-orange.svg">
+  <img alt="PyTorch 2.11 · CUDA 12.8" src="https://img.shields.io/badge/PyTorch-2.11%20%C2%B7%20CUDA%2012.8-ee4c2c.svg">
   <img alt="SAM3" src="https://img.shields.io/badge/Meta-SAM3-8a2be2.svg">
-  <img alt="Docker Compose" src="https://img.shields.io/badge/Docker-Compose-2496ed.svg">
+  <img alt="RAFT · torchao fp8 · NVENC" src="https://img.shields.io/badge/GPU%20pipeline-RAFT%20%C2%B7%20fp8%20%C2%B7%20NVENC-76b900.svg">
+  <img alt="Detectron2 (2025 app)" src="https://img.shields.io/badge/2025%20app-Detectron2%20%C2%B7%20Docker-lightgrey.svg">
 </p>
 
 **AI-based replacement of pitch-side advertising boards in sports video
 (virtual advertising / ad insertion without camera-tracking hardware).**
-Upload a clip, pick an ad, get the same clip back with every board carrying
-the new ad, players and ball untouched. A segmentation model finds the
-boards in every frame and a second model protects the people in front of
-them. Built with PyTorch, Detectron2 Mask R-CNN, OpenCV, Flask, nginx and
-Docker; the next iteration uses Meta's SAM3 for prompt-based detection.
+Give it a clip and an ad, get the same clip back with every board carrying
+the new ad, players and ball untouched. Meta's SAM3 finds the boards from a
+text prompt with no training data, a camera-motion model carries them between
+detections, and the ad is composited on the GPU: 23-26 fps at 1080p on one
+RTX 5070 Ti. Built with PyTorch, SAM3, RAFT, torchao (fp8), OpenCV and
+ffmpeg/NVENC. The 2025 generation, a Detectron2 Mask R-CNN app in Docker, is
+kept in `app/` and still runs.
 
 <p align="center">
-  <img src="docs/images/hero_before_after.jpg" alt="Original clip vs AdSwapAI output" width="900"><br>
-  <sub>Left: the original broadcast clip. Right: AdSwapAI output (Sep 2026 build), same three moments. The far LED strip and the near boards carry the new ad; the players stay in front.</sub>
+  <img src="docs/images/sam3_replace_before_after.jpg" alt="Original clip vs AdSwapAI output" width="900"><br>
+  <sub>Left: the original broadcast clips. Right: AdSwapAI output (SAM3 pipeline, 3 Sep 2026). Every board carries the new ad, the far LED strips included; the players and the goal net stay in front.</sub>
 </p>
 
 This repository is the whole story of the project, from the first CUDA smoke
@@ -34,18 +36,20 @@ that worked and that explain how the next step came about.
 
 ## Status
 
-* **Working**: `app/` processes 1080p football footage at about 6 fps on an
-  RTX 5070 Ti (two Mask R-CNN passes per frame), served through a web UI.
-  Verified end to end on 2 Sep 2026.
-* **New pipeline (3 Sep 2026, `experiments/07_sam3_sep2026/`)**: SAM3
-  text-prompted detection with no training data, camera-motion tracking
-  between detections, everything after decoding on the GPU (bf16/fp8 backbone,
-  CUDA graphs, NVENC). All three sample clips replaced end to end at 23-26 fps
-  on the same card, audio kept, no boxes. Not yet wired into `app/`.
-* **Model**: custom Detectron2 Mask R-CNN (R50-FPN) trained on ~150
-  hand-labelled frames from three matches. It is good on those matches and
-  generalises modestly; new footage needs more labelled data.
-* **Not done**: live/stream mode, a model trained at scale, curved LED strips.
+* **Current pipeline** (`experiments/07_sam3_sep2026/`, 3 Sep 2026): SAM3
+  text-prompted detection, no training data; SAM3 runs on every 5th frame and
+  a homography from RAFT optical flow moves the boards in between; everything
+  after decoding runs on the GPU (fp8 backbone with torchao, transformers and
+  RAFT under CUDA graphs, GPU compositing, NVENC encoding). All three sample
+  clips replaced end to end at 23-26 fps, audio kept. Plain scripts, no web
+  UI yet.
+* **Previous generation** (`app/`, 2025, cleaned up 2 Sep 2026): Flask +
+  Detectron2 Mask R-CNN in Docker with a web UI, about 6 fps at 1080p on the
+  same card, two Mask R-CNN passes per frame. Its custom model was trained on
+  ~150 hand-labelled frames from three matches and generalises modestly; that
+  is what SAM3 removes.
+* **Not done**: SAM3 pipeline in the web app, live/stream mode, curved LED
+  strips, lighting and colour matching of the ad.
 * The company behind it (Altervision, later AdSwap AI) looked for investment
   in mid-2025 and did not find it; the code was shelved until this clean-up.
 
@@ -53,7 +57,7 @@ that worked and that explain how the next step came about.
 
 ```
 adswapai/
-├── app/            the current application: Flask + Detectron2 backend, nginx frontend, Docker Compose
+├── app/            the 2025 application (previous generation, still runs): Flask + Detectron2 backend, nginx, Docker Compose
 ├── experiments/    the R&D history, one chapter per phase, each with its own README
 │   ├── 01_pretrained_detectors_jan2025/   pretrained Faster/Mask R-CNN in Docker, click-to-detect, MJPEG stream
 │   ├── 02_cars_to_adboards_mar2025/       car tracking, car removal by inpainting, first ad replaced by hand-drawn polygon
@@ -69,8 +73,24 @@ adswapai/
 
 ## Quick start
 
+**SAM3 pipeline** (Windows or Linux, one NVIDIA GPU with 16 GB, ffmpeg with
+NVENC on PATH):
+
 ```bash
-git clone <this repo> && cd adswapai/app
+git clone <this repo> && cd adswapai/experiments/07_sam3_sep2026
+# venv with torch (CUDA 12.8), sam3, torchao and the SAM3 checkpoint: see the chapter README, section 1
+# put the sample clips into data/ (docs/assets.md)
+python sam3_replace.py            # settings at the top of the file: clip, ad image, detection interval
+```
+
+The output video, a stats JSON (fps, time per stage) and a contact sheet of
+original | replaced pairs land in `output/replace/`. `sam3_hybrid_track.py`
+writes the diagnostic version with coloured masks and track ids.
+
+**2025 app** (Docker, web UI, Detectron2):
+
+```bash
+cd adswapai/app
 # put model_final.pth into backend/ and the sample clips into frontend/static/sampleVideos/ (docs/assets.md)
 docker compose up -d --build      # first build 15-40 min: torch 2.7 + CUDA 12.8 + Detectron2
 ```
@@ -78,18 +98,30 @@ docker compose up -d --build      # first build 15-40 min: torch 2.7 + CUDA 12.8
 Open http://localhost, choose a sample clip and an ad, press **Process**.
 Details, API, CLI and limitations: [`app/README.md`](app/README.md).
 
-## How a frame is processed
+## How a frame is processed (SAM3 pipeline)
 
-1. The custom Mask R-CNN returns an instance mask per advertising board.
-2. A stock COCO Mask R-CNN returns masks for people and the ball; they are
-   subtracted from every board mask.
-3. A small IoU tracker keeps a board alive for a few frames when detection
-   drops out, which removes most flicker.
-4. Boards wider than 60 % of the frame (the perimeter LED strip) get the ad
-   repeated horizontally; the others get a single perspective-warped ad.
-   Corners come from the minimum-area rectangle snapped to the mask's convex
-   hull; edges are feathered.
-5. Frames stream into ffmpeg (H.264, faststart); the original audio is kept.
+1. **Detection**, every 5th frame and on shot cuts: SAM3 with the text prompt
+   "sponsor banner" returns a mask and a score per board. Overlapping
+   duplicates and HUD graphics are dropped; the work is done on the decoder's
+   low-resolution masks with one matmul.
+2. **Camera motion**, every frame: RAFT-small optical flow at quarter
+   resolution, a homography fitted to it with RANSAC.
+3. **Tracking**: every board's mask, box and quadrilateral are moved with
+   that homography; on detection frames the moved masks are matched to the
+   new detections by IoU, so ids survive pans and brief drop-outs.
+4. **Replacement**: a quadrilateral per board (minimum-area rectangle, long
+   edges as top and bottom, corners snapped to the convex hull), fitted once
+   per detection; the ad is mapped into it on the GPU, repeated with its
+   aspect ratio on wide strips, centre-cropped on narrow boards, and painted
+   inside the mask with a feathered edge. Players in front of a board are not
+   in SAM3's mask, so they stay in front of the ad.
+5. **Encoding**: frames go to ffmpeg on a writer thread, H.264 on NVENC, the
+   original audio copied.
+
+The GPU work behind it, with the measurements that led to each choice, is in
+the [chapter README](experiments/07_sam3_sep2026/README.md). The 2025 app's
+pipeline (Detectron2 + a COCO person model) is described in
+[`app/README.md`](app/README.md).
 
 ## The journey
 
@@ -101,7 +133,7 @@ Details, API, CLI and limitations: [`app/README.md`](app/README.md).
 | [04 Mask R-CNN replacement](experiments/04_maskrcnn_replacement_apr2025/) | 18 Apr – 8 May 2025 | Dataset relabelled with VIA polygons, **Detectron2 Mask R-CNN** trained (the model still in use), perspective paste, two-stage detect/render pipeline, DeepSORT-style and RAFT optical-flow tracking with people/ball subtraction, then a deliberate rollback to per-frame replacement. | The detection quality that made a demo possible; the 150-line per-frame replacer became the app's core. |
 | [05 Web application](experiments/05_web_app_may2025/) | 8 May – 5 Jun 2025 | Flask API + nginx site, job queue, admin page, perspective paste, smart tiling for wide boards, Altervision → AdSwap AI rebrand, landing page with before/after slider. | Public demo used for the investor search. |
 | [06 SAM2 baseline](experiments/06_sam2_baseline_aug2025/) | 25 Aug 2025 | Segment Anything 2 video predictor prompted with grid points, as a baseline for prompt-based tracking. | Last experiment before the project was shelved. |
-| [Current app](app/) | 2 Sep 2026 | Clean-up of the May 2025 app: pipeline separated from Flask, single GPU worker queue, temporal smoothing, feathered edges, aspect-correct tiling, robust corner selection, one-pass ffmpeg encoding with audio, every API route proxied. | Verified on all sample clips; this is the code to continue from. |
+| [Current app](app/) | 2 Sep 2026 | Clean-up of the May 2025 app: pipeline separated from Flask, single GPU worker queue, temporal smoothing, feathered edges, aspect-correct tiling, robust corner selection, one-pass ffmpeg encoding with audio, every API route proxied. | Verified on all sample clips; the previous generation, kept runnable. |
 | [07 SAM3](experiments/07_sam3_sep2026/) | 2 Sep 2026 → | **Active.** Meta's SAM3 with text prompts finds every board (far LED strips included) with no training data: "sponsor banner" / "advertisement" beat "billboard". Three tracking approaches measured on the same frames (SAM3 video predictor, SAM 3.1 multiplex, hybrid detect + associate). 3 Sep: the hybrid tracker rebuilt as a GPU pipeline (3.3 → 11 fps: post-processing on the GPU, bf16 then fp8 backbone with torchao, transformer + RAFT under CUDA graphs, NVENC), detection every 5th frame with RAFT-homography propagation in between (33 fps tracking), and a first board-space ad replacement. | Detection solved without a dataset; all three clips replaced end to end at 23-26 fps. |
 
 The long-form write-up with what was tried, what failed and why is in
@@ -159,5 +191,6 @@ replacement third.
 
 [MIT](LICENSE). The sample footage, the ad images and the brand assets in
 `docs/images/brand/` are not covered by the license; the third-party models
-and libraries used (Detectron2, torchvision, Ultralytics, SAM2, RAFT,
-SuperGlue) keep their own licenses.
+and libraries used (SAM3, torchao, kornia, Detectron2, torchvision,
+Ultralytics, SAM2, RAFT, SuperGlue) keep their own licenses; the SAM3
+checkpoint is distributed under Meta's SAM License.
