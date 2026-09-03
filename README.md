@@ -37,6 +37,11 @@ that worked and that explain how the next step came about.
 * **Working**: `app/` processes 1080p football footage at about 6 fps on an
   RTX 5070 Ti (two Mask R-CNN passes per frame), served through a web UI.
   Verified end to end on 2 Sep 2026.
+* **New pipeline (3 Sep 2026, `experiments/07_sam3_sep2026/`)**: SAM3
+  text-prompted detection with no training data, camera-motion tracking
+  between detections, everything after decoding on the GPU (bf16/fp8 backbone,
+  CUDA graphs, NVENC). All three sample clips replaced end to end at 23-26 fps
+  on the same card, audio kept, no boxes. Not yet wired into `app/`.
 * **Model**: custom Detectron2 Mask R-CNN (R50-FPN) trained on ~150
   hand-labelled frames from three matches. It is good on those matches and
   generalises modestly; new footage needs more labelled data.
@@ -56,7 +61,7 @@ adswapai/
 │   ├── 04_maskrcnn_replacement_apr2025/   Detectron2 Mask R-CNN inference, RAFT optical flow, mask-based replacement
 │   ├── 05_web_app_may2025/                the Flask web app as it was when the investor search started
 │   ├── 06_sam2_baseline_aug2025/          last experiment before the shelf: SAM2 video tracking baseline
-│   └── 07_sam3_sep2026/                   active: SAM3 text-prompted detection and tracking probes
+│   └── 07_sam3_sep2026/                   active: SAM3 detection, camera-motion tracking, GPU replacement pipeline
 ├── training/       datasets (YOLO v1, VIA v3, COCO json) and the training scripts
 ├── docs/           journey write-up, asset list, before/after frames, concept art, business documents
 └── .gitignore      model weights, videos and datasets with images stay out of git (see docs/assets.md)
@@ -97,7 +102,7 @@ Details, API, CLI and limitations: [`app/README.md`](app/README.md).
 | [05 Web application](experiments/05_web_app_may2025/) | 8 May – 5 Jun 2025 | Flask API + nginx site, job queue, admin page, perspective paste, smart tiling for wide boards, Altervision → AdSwap AI rebrand, landing page with before/after slider. | Public demo used for the investor search. |
 | [06 SAM2 baseline](experiments/06_sam2_baseline_aug2025/) | 25 Aug 2025 | Segment Anything 2 video predictor prompted with grid points, as a baseline for prompt-based tracking. | Last experiment before the project was shelved. |
 | [Current app](app/) | 2 Sep 2026 | Clean-up of the May 2025 app: pipeline separated from Flask, single GPU worker queue, temporal smoothing, feathered edges, aspect-correct tiling, robust corner selection, one-pass ffmpeg encoding with audio, every API route proxied. | Verified on all sample clips; this is the code to continue from. |
-| [07 SAM3](experiments/07_sam3_sep2026/) | 2 Sep 2026 → | **Active.** Meta's SAM3 with text prompts finds every board (far LED strips included) with no training data: "sponsor banner" / "advertisement" beat "billboard". Three tracking approaches measured on the same frames (SAM3 video predictor, SAM 3.1 multiplex, hybrid detect + associate). | Detection solved without a dataset; tracker choice and board-space replacement are next. |
+| [07 SAM3](experiments/07_sam3_sep2026/) | 2 Sep 2026 → | **Active.** Meta's SAM3 with text prompts finds every board (far LED strips included) with no training data: "sponsor banner" / "advertisement" beat "billboard". Three tracking approaches measured on the same frames (SAM3 video predictor, SAM 3.1 multiplex, hybrid detect + associate). 3 Sep: the hybrid tracker rebuilt as a GPU pipeline (3.3 → 11 fps: post-processing on the GPU, bf16 then fp8 backbone with torchao, transformer + RAFT under CUDA graphs, NVENC), detection every 5th frame with RAFT-homography propagation in between (33 fps tracking), and a first board-space ad replacement. | Detection solved without a dataset; all three clips replaced end to end at 23-26 fps. |
 
 The long-form write-up with what was tried, what failed and why is in
 [`docs/journey.md`](docs/journey.md).
@@ -124,22 +129,31 @@ replacement third.
   <sub>SAM3, prompt "sponsor banner", no training: every board found in all three clips at four moments each.</sub>
 </p>
 
-1. **Detect once, track in between.** SAM3 finds the boards on the first
-   frame and after events (shot cuts, new boards); a tracker follows them
-   instead of re-detecting every frame. Candidates measured in
-   `experiments/07_sam3_sep2026`: SAM3 video predictor (stable, 0.24 fps),
-   SAM 3.1 multiplex (fast prompts, propagation not yet stable on 16 GB),
-   hybrid detect + IoU association (3.4 fps).
-2. **Board-space rendering.** Each board gets a persistent reference
-   quadrilateral; the ad is mapped in board coordinates, so a half-visible
-   board shows half an ad and the ad stops sliding during pans. Needs a
-   camera-motion homography, which also carries boards through occlusion.
+<p align="center">
+  <img src="docs/images/sam3_replace_before_after.jpg" alt="SAM3 pipeline: original vs replaced" width="900"><br>
+  <sub>3 Sep 2026, <code>sam3_replace.py</code>: original (left) and output (right) for clip 2 and clip 1. SAM3 every 5th frame, RAFT-homography propagation in between, ad mapped per board on the GPU; 23-26 fps at 1080p on an RTX 5070 Ti.</sub>
+</p>
+
+1. **Detect once, track in between.** Done in its first form: SAM3 on every
+   5th frame (and on shot cuts), tracks moved with a camera homography from
+   RAFT optical flow in between. 33 fps tracking on clip 2 with fewer id
+   switches than detecting every frame. Measured alternatives: SAM3 video
+   predictor (0.24 fps), SAM 3.1 multiplex (propagation not stable on 16 GB).
+2. **Board-space rendering.** First version done: a quadrilateral per board,
+   fitted once per detection and carried by the homography, the ad mapped
+   into it on the GPU (tiled on wide strips). Still to do: merge boards found
+   as separate sponsor panels, keep the ad anchored to the board across
+   partial visibility, colour and lighting match.
 3. **Soft occluders.** People and ball as alpha mattes instead of binary
-   masks, motion blur and colour matched to the board.
-4. **GPU pipeline.** torch-based warping and compositing, fp16, GPU decode
-   and encode; target real-time 1080p.
-5. Later: a real dataset (the business plan's 3 M frames) if a trained
-   detector is still needed, and a real-time broadcast path.
+   masks, motion blur; on propagated frames the occluder hole still moves
+   with the camera, not with the player.
+4. **GPU pipeline.** Done for the experiment: bf16 / fp8 backbone (torchao),
+   transformer and RAFT under CUDA graphs, GPU compositing, NVENC encoding,
+   decode and encode on worker threads. Remaining lever: the ViT rebuilt at a
+   lower input size.
+5. Move the SAM3 pipeline into `app/` (replacing Detectron2), then a
+   real-time broadcast path; a trained detector only if SAM3 fails on new
+   footage.
 
 ## License
 
